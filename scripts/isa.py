@@ -1,4 +1,5 @@
 import re
+import struct
 
 
 # General purpose REGisters, mapping from name in assembly to encoding. There
@@ -181,17 +182,17 @@ SYNTAX = {
     'bnez':     'bnez {b}, {c}',
     'bltz':     'bltz {b}, {c}',
     'bgez':     'bgez {b}, {c}',
-    'eq':       'eq.{p} {b}, {c}',
-    'ne':       'ne.{p} {b}, {c}',
-    'lt':       'lt.{p} {b}, {c}',
-    'ltu':      'ltu.{p} {b}, {c}',
-    'ge':       'ge.{p} {b}, {c}',
-    'geu':      'geu.{p} {b}, {c}',
+    'eq':       'eq.{p} {q}, {b}, {c}',
+    'ne':       'ne.{p} {q}, {b}, {c}',
+    'lt':       'lt.{p} {q}, {b}, {c}',
+    'ltu':      'ltu.{p} {q}, {b}, {c}',
+    'ge':       'ge.{p} {q}, {b}, {c}',
+    'geu':      'geu.{p} {q}, {b}, {c}',
     'putp':     'putp.{p} {q}, {b}, {c}',
-    'eqz':      'eqz.{p} {b}',
-    'nez':      'nez.{p} {b}',
-    'ltz':      'ltz.{p} {b}',
-    'gez':      'gez.{p} {b}',
+    'eqz':      'eqz.{p} {q}, {b}',
+    'nez':      'nez.{p} {q}, {b}',
+    'ltz':      'ltz.{p} {q}, {b}',
+    'gez':      'gez.{p} {q}, {b}',
     'putpf':    'putpf.{p} {q}',
     'putpt':    'putpt.{p} {q}',
     'srl':      'srl.{p} {a}, {b}, {c}',
@@ -237,22 +238,23 @@ SYNTAX = {
 }
 
 
-# Synonyms supported by the assembler.
+# Synonyms supported by the assembler. Each entry is a tuple of syntax, real
+# instruction, and operand mapping for those that aren't present.
 SYNONYMS = {
     # Move zero into GREG.
-    'movz.{p} {a}':     'xor.{p} {a}, {a}, {a}',
+    'movz': ('movz.{p} {a}', 'xor', {'b': '{a}', 'c': '{a}'}),
 
     # Unconditional branch/jump with or without link.
-    'b {c}':            'bt.pt {c}',
-    'j {c}':            'jt.pt {c}',
-    'bl {c}':           'blt.pt {c}',
-    'jl {c}':           'jlt.pt {c}',
+    'b':    ('b {c}', 'bt', {'p': PREGS['pt']}),
+    'j':    ('j {c}', 'jt', {'p': PREGS['pt']}),
+    'bl':   ('bl {c}', 'blt', {'p': PREGS['pt']}),
+    'jl':   ('jl {c}', 'jlt', {'p': PREGS['pt']}),
 
     # Return from function call.
-    'ret.{p}':          'jt.{p} lr',
+    'ret':  ('ret.{p} lr', 'jt', {'c': GREGS['lr']}),
 
     # Get value of predicate register.
-    'getp {a}, {p}':    'inc.{p} {a}',
+    'getp': ('getp {a}, {p}', 'inc', {}),
 }
 
 
@@ -279,3 +281,183 @@ def parse_imm(data, error_prefix='', bits=16):
         raise Exception(f'{error_prefix}Immediate is too small: {data}')
 
     return imm
+
+
+# Class representing a single instruction.
+class Instruction:
+    # Default to a NOP.
+    def __init__(self):
+        self.name = 'nop'
+        self.ops = {}
+
+    # Create instruction from parts parsed from a line of assembly.
+    @staticmethod
+    def from_parts(parts, error_prefix=''):
+        instr = Instruction()
+
+        # The first part should be the optionally predicated name of the
+        # instruction.
+        instr.name = parts.pop(0)
+
+        if '.' in instr.name:
+            instr.name, pred = instr.name.split('.', 1)
+            parts.insert(0, pred)
+        else:
+            pred = None
+
+        # Find the syntax string for the instruction.
+        if instr.name in SYNONYMS:
+            syntax, instr.name, op_map = SYNONYMS[instr.name]
+        else:
+            syntax = SYNTAX.get(instr.name)
+            op_map = {}
+
+        if not syntax:
+            raise Exception(f'{error_prefix}Unknown instruction: {instr.name}')
+
+        # Find all of the operands from the syntax string and parse them.
+        op_pattern = re.compile(r'\{(?P<name>[abcpq])\}')
+        for name in op_pattern.finditer(syntax):
+            name = name.group('name')
+
+            # If this is operand p but none was specified in the instruction
+            # name then it defaults to pt.
+            if name == 'p' and not pred:
+                value = 'pt'
+            else:
+                if not parts:
+                    raise Exception(f'{error_prefix}Missing operand: {name}')
+
+                value = parts.pop(0)
+
+            # Predicate registers.
+            if name in 'pq':
+                if value not in PREGS:
+                    raise Exception(
+                        f'{error_prefix}Bad predicate register for '
+                        f'operand {name}: {value}'
+                    )
+
+                instr.ops[name] = PREGS[value]
+                continue
+
+            # If this is operand c then check for an immediate. This could be in
+            # a number of forms:
+            # - A numeric literal e.g. 0xab, 0b1101, 123
+            # - A character literal e.g. 'A', '\n'
+            # - An absolute reference to a label e.g. $target
+            # - A relative reference to a label e.g. @target
+            if name == 'c':
+                imm = None
+
+                if value[0] in '$@':
+                    imm = value
+                elif m := re.match(r"'(?P<value>[^\\]|\\[\\tn0])'", value):
+                    value = m.group('value')
+                    if value == '\\0':
+                        imm = 0
+                    elif value == '\\n':
+                        imm = ord('\n')
+                    elif value == '\\t':
+                        imm = ord('\t')
+                    else:
+                        imm = ord(value)
+                else:
+                    # If we can't parse an immediate here then the value will be
+                    # treated as a GREG.
+                    try:
+                        imm = parse_imm(value, error_prefix)
+                    except:
+                        pass
+
+                # If an immediate was parsed then we should store it as an
+                # operand and encode c as r7.
+                if imm is not None:
+                    instr.ops['imm'] = imm
+                    value = 'r7'
+
+            # Parse as a general purpose register.
+            if value not in GREGS:
+                raise Exception(
+                    f'{error_prefix}Bad general purpose register for '
+                    f'operand {name}: {value}'
+                )
+
+            instr.ops[name] = GREGS[value]
+
+        if instr.ops.get('c') == GREGS['r7'] and 'imm' not in instr.ops:
+            raise Exception(f'{error_prefix}Cannot have r7 as operand c.')
+
+        # Add in an operands that come from the mapping from synonym to real
+        # underlying instruction.
+        for name, value in op_map.items():
+            if m := op_pattern.match(str(value)):
+                instr.ops[name] = instr.ops[m.group('name')]
+            else:
+                instr.ops[name] = value
+
+        return instr
+
+    # Return instruction as a string.
+    def __str__(self):
+        ops = {}
+
+        for k, v in self.ops.items():
+            if k == 'imm':
+                continue
+
+            if k in 'pq':
+                ops[k] = PREGS_INV[v]
+            elif k in 'ab':
+                ops[k] = GREGS_INV[v]
+            else:
+                if 'imm' in self.ops:
+                    v = self.ops['imm']
+                    if isinstance(v, int):
+                        ops[k] = hex(v)
+                    else:
+                        ops[k] = v
+                else:
+                    ops[k] = GREGS_INV[v]
+
+        return SYNTAX[self.name].format(**ops)
+
+    # Encode the instruction into raw bytes.
+    def encode(self, error_prefix=''):
+        bits = ENCODINGS[self.name]
+
+        # Replace bits in the encoding with operand values.
+        for name, value in self.ops.items():
+            if name == 'imm':
+                continue
+
+            n = bits.count(name)
+            enc = f'{value:0{n}b}'
+
+            if len(enc) != n:
+                raise Exception(
+                    f'{error_prefix}Cannot encode operand {name}: {value}'
+                )
+
+            enc = iter(enc)
+            bits = ''.join(next(enc) if x == name else x for x in bits)
+
+        # Generate bytes for the instruction.
+        enc = struct.pack('>H', int(bits, 2))
+
+        # Append with immediate value if present.
+        imm = self.ops.get('imm')
+        if imm is None:
+            return enc
+
+        if not isinstance(imm, int):
+            print(self)
+            raise Exception(
+                f'{error_prefix}Cannot encode non-int immediate: {imm}'
+            )
+
+        return enc + struct.pack('>h', imm)
+
+    # Size of the instruction when encoded in number of 16b chunks.
+    def size(self):
+        return 1 + ('imm' in self.ops)
