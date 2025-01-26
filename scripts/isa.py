@@ -461,3 +461,54 @@ class Instruction:
     # Size of the instruction when encoded in number of 16b chunks.
     def size(self):
         return 1 + ('imm' in self.ops)
+
+    # Parse instruction from a pair of 16b chunks.
+    @staticmethod
+    def from_bytes(this_half, next_half):
+        instr = Instruction()
+
+        if len(this_half) < 2:
+            raise Exception(f'Not enough bytes to parse: {this_half}')
+
+        # Read first 16b chunk and identify the instruction.
+        enc, = struct.unpack('>H', this_half)
+        names = []
+
+        for name, opcode in OPCODES.items():
+            mask = OPCODE_MASKS[name]
+
+            if (enc & mask) == opcode:
+                names.append(name)
+
+        if not name:
+            raise Exception(f'No matching opcodes found: {this_half}')
+        if len(names) > 1:
+            raise Exception(f'Ambiguous decode of {this_half}: {names}')
+
+        instr.name = names[0]
+        enc_str = ENCODINGS[instr.name]
+
+        # Extract the operand values from the encoding.
+        instr.ops = {k: None for k in enc_str if k not in '01'}
+        for name in instr.ops:
+            mask = int(''.join('1' if x == name else '0' for x in enc_str), 2)
+            value = (enc & mask) >> ((mask & -mask).bit_length() - 1)
+            instr.ops[name] = value
+
+        # Read immediate operand if present.
+        if instr.ops.get('c') == GREGS['r7']:
+            if len(next_half) < 2:
+                raise Exception(
+                    'Not enough bytes to parse immediate: {next_half}'
+                )
+
+            instr.ops['imm'], = struct.unpack('>h', next_half)
+
+        return instr
+
+    # Check for equality between two instructions.
+    def __eq__(self, other):
+        if not isinstance(other, Instruction):
+            return False
+
+        return self.name == other.name and self.ops == other.ops
