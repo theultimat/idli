@@ -258,6 +258,20 @@ SYNONYMS = {
 }
 
 
+# Instructions which read operand A as a source register.
+INSTRS_READ_A = set([
+    '!st',
+    'st!',
+    'st',
+    'push',
+    'pop',
+    'insbl',
+    'insbt',
+    'inc',
+    'dec',
+])
+
+
 # Parse an immediate of the specified number of bits.
 def parse_imm(data, error_prefix='', bits=16):
     try:
