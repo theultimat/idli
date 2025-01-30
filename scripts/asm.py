@@ -79,13 +79,13 @@ def parse_directive(args, parts, inc_dir, error_prefix, indent):
         if len(parts) != 1:
             raise Exception(f'{error_prefix}Junk at end of line.')
 
-        path = parts[1]
+        path = parts[0]
         parts.pop(0)
 
         if path[0] != '"' or path[-1] != '"':
             raise Exception(f'{error_prefix}Bad include path string format.')
 
-        path = inc_dir / path
+        path = inc_dir / path[1:-1]
 
         if not path.is_file():
             raise Exception(
