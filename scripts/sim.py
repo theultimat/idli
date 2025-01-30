@@ -556,3 +556,117 @@ class Idli:
     # Swap the endianness of the 16b value.
     def _swap_endian(self, value):
         return ((value & 0xff) << 8) | ((value >> 8) & 0xff)
+
+
+# Parse command line arguments if running in standalone mode.
+def parse_args():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        'input',
+        metavar='INPUT',
+        type=pathlib.Path,
+        help='Path to input binary.'
+    )
+
+    parser.add_argument(
+        '-t',
+        '--timeout',
+        type=int,
+        default=5000,
+        help='Maximum ticks to run before ending the test.'
+    )
+
+    parser.add_argument(
+        '-i',
+        '--uart-in',
+        default='',
+        help='Colon separated list of 16b values to send on URX.'
+    )
+
+    parser.add_argument(
+        '-o',
+        '--uart-out',
+        default='',
+        help='Expected data to receive from the core from UTX.'
+    )
+
+    args = parser.parse_args()
+
+    if not args.input.is_file():
+        raise Exception(f'Bad input file: {args.input}')
+
+    # Convert input and output data into byte buffers.
+    uart_in = bytes()
+    for value in args.uart_in.split(':'):
+        if not value:
+            continue
+        uart_in += struct.pack('<h', int(value, 0))
+
+    uart_out = bytes()
+    for value in args.uart_out.split(':'):
+        if not value:
+            continue
+        uart_out += struct.pack('<h', int(value, 0))
+
+    args.uart_in = uart_in
+    args.uart_out = uart_out
+
+    return args
+
+
+# Entry point for standalone simulation.
+if __name__ == '__main__':
+    args = parse_args()
+
+    # Create a callback to feed the data into the core and read it out.
+    class Callback(IdliCallback):
+        def __init__(self, uart_in):
+            self.uart_in = uart_in
+            self.uart_out = bytes()
+
+        def read_uart(self, width):
+            if width == 1:
+                value, = struct.unpack_from('<b', self.uart_in)
+                self.uart_in = self.uart_in[1:]
+            else:
+                value, = struct.unpack_from('<h', self.uart_in)
+                self.uart_in = self.uart_in[2:]
+
+            return value
+
+        def write_uart(self, value, width):
+            fmt = '<B' if width == 1 else '<H'
+            self.uart_out += struct.pack(fmt, value)
+
+    # Create the simulator.
+    cb = Callback(args.uart_in)
+    sim = Idli(args.input, trace=True, callback=cb)
+
+    # Run the test until we see the END string followed by return value or hit
+    # the timeout.
+    end_str = 'END'.encode('utf-8')
+    finished = False
+
+    for i in range(args.timeout):
+        sim.tick()
+
+        finished = cb.uart_out[-5:-2] == end_str
+        if finished:
+            break
+
+    # Check we passed.
+    if not finished:
+        raise Exception(f'Test exceeded timeout!')
+
+    exit_code, = struct.unpack_from('<h', cb.uart_out[-2:])
+    if exit_code:
+        raise Exception(f'Test exited with code: {exit_code}')
+
+    # Check the output matched the expected value.
+    if args.uart_out != cb.uart_out[:-5]:
+        raise Exception(
+            f'Test UART output differed from expected value:\n'
+            f'  Expected: {args.uart_out}\n'
+            f'  Actual:   {cb.uart_out[:-5]}'
+        )
