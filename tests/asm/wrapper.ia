@@ -1,0 +1,22 @@
+# Standard test wrapper - sets all the reigsters to zero then branches to the
+# main test function. This expects the test function to return an integer, where
+# zero indicates a pass, and then sends the string "END" followed by this exit
+# code back to the test bench.
+
+_init:
+    mov         r0, 0           # r0 = 0, can't use movz as xor would give 'x
+    mov         r1, r0          # r1 = 0
+    mov         r2, r0          # r2 = 0
+    mov         r3, r0          # r3 = 0
+    mov         r4, r0          # r4 = 0
+    mov         r5, r0          # r5 = 0
+    mov         sp, r0          # sp = 0
+    putpf       p0              # p0 = 0
+    putpf       p1              # p1 = 0
+    putpf       p2              # p2 = 0
+    jl          $main           # main()
+    utxb        'E'             # uart.send('E')
+    utxb        'N'             # uart.send('N')
+    utxb        'D'             # uart.send('D')
+    utx         r0              # uart.send(r0)
+1:  b           @1b             # goto 1

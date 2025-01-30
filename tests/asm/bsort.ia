@@ -1,0 +1,51 @@
+    .include "wrapper.ia"
+
+data: .zeros 16                 # int16_t data[16]
+
+bsort:                          # r0 = data, r1 = n
+    putpf       p0              # swapped = false
+    mov         r2, 1           # i = 1
+1:  ltu         p1, r2, r1      # p = i < n
+    bf.p1       @2f             # if (!p) goto 2
+    sub         r3, r2, 1       # j = i - 1
+    ld          r4, r0, r2      # x = data[i]
+    ld          r5, r0, r3      # y = data[i - 1]
+    lt          p1, r4, r5      # p = x < y
+    st.p1       r5, r0, r2      # if(p) data[i] = y
+    st.p1       r4, r0, r3      # if(p) data[i - 1] = x
+    putpt.p1    p0              # if(p) swapped = true
+    inc         r2              # i++
+    b           @1b             # goto 1
+2:  dec         r1              # n--
+    bt.p0       @bsort          # if (swapped) goto bsort
+    ret                         # return
+
+main:
+    urx         r1              # n = uart.recv()
+    ltu         p0, r1, 16      # p = n < 16
+    bt.p0       @1f             # if (p) goto 1
+    mov         r0, -1          # retval = -1
+    ret                         # return retval
+1:  addpc       r0, @data       # ptr = &data
+    movz        r2              # i = 0
+2:  geu         p0, r2, r1      # p = i >= n
+    bt.p0       @3f             # if (p) goto 3
+    urx         r3              # tmp = uart.recv()
+    st          r3, r0, r2      # ptr[i] = tmp
+    inc         r2              # i++
+    b           @2b             # goto 2
+3:  push        lr..lr          # push(lr)
+    push        r1..r1          # push(n)
+    bl          @bsort          # bsort(ptr, n)
+    addpc       r0, @data       # ptr = &data
+    pop         r1..r1          # n = pop()
+    movz        r2              # i = 0
+4:  geu         p0, r2, r1      # p = i >= n
+    bt.p0       @5f             # if (p) goto 5
+    ld          r3, r0, r2      # tmp = ptr[i]
+    utx         r3              # uart.send(tmp)
+    inc         r2              # i++
+    b           @4b             # goto 4
+5:  pop         lr..lr          # lr = pop()
+    movz        r0              # retval = 0
+    ret                         # return retval
