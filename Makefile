@@ -62,8 +62,8 @@ $(BUILD_ROOT)/%.iout.dis: $(BUILD_ROOT)/%.iout $(VENV_READY)
 
 # Run a single test on the simulator.
 SIM_TEST        ?= $(BUILD_ROOT)/$(ASM_DIR)/bsort.iout
-SIM_TEST_IN     ?= 5:-4:10:-100:44:999
-SIM_TEST_OUT    ?= :-100:-4:10:44:999
+SIM_TEST_IN     ?= $(ASM_DIR)/bsort.in
+SIM_TEST_OUT    ?= $(ASM_DIR)/bsort.out
 SIM_TEST_TIMEOUT ?= 5000
 
 SIM := source $(VENV_ACTIVATE) && $(PYTHON) $(SCRIPTS_ROOT)/sim.py

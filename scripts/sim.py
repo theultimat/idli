@@ -3,6 +3,7 @@ import pathlib
 import struct
 
 import isa
+import tb
 
 
 # Callback used by the simulator to invoke functions when events of note occur.
@@ -585,14 +586,14 @@ def parse_args():
         '-i',
         '--uart-in',
         default='',
-        help='Colon separated list of 16b values to send on URX.'
+        help='UART input file.'
     )
 
     parser.add_argument(
         '-o',
         '--uart-out',
         default='',
-        help='Expected data to receive from the core from UTX.'
+        help='UART expected output file.'
     )
 
     args = parser.parse_args()
@@ -601,20 +602,8 @@ def parse_args():
         raise Exception(f'Bad input file: {args.input}')
 
     # Convert input and output data into byte buffers.
-    uart_in = bytes()
-    for value in args.uart_in.split(':'):
-        if not value:
-            continue
-        uart_in += struct.pack('<h', int(value, 0))
-
-    uart_out = bytes()
-    for value in args.uart_out.split(':'):
-        if not value:
-            continue
-        uart_out += struct.pack('<h', int(value, 0))
-
-    args.uart_in = uart_in
-    args.uart_out = uart_out
+    args.uart_in = tb.load_uart_file(args.uart_in)
+    args.uart_out = tb.load_uart_file(args.uart_out)
 
     return args
 
