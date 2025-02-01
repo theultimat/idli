@@ -59,6 +59,9 @@ export IDLI_RUN_TEST_TIMEOUT ?=
 export IDLI_RUN_TEST_IN      ?=
 export IDLI_RUN_TEST_OUT     ?=
 
+# Make sure the python path includes the path to the scripts.
+export PYTHONPATH := ../scripts:$(PYTHONPATH)
+
 
 # Include the main cocotb Makefile.
 include $(shell cocotb-config --makefiles)/Makefile.sim
