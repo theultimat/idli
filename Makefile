@@ -19,7 +19,7 @@ clean:
 # Create virtual environment for running tests using cocotb.
 VENV 		  := $(BUILD_ROOT)/venv
 VENV_ACTIVATE := $(VENV)/bin/activate
-VENV_REQS     := $(TESTS_ROOT)/requirements.txt
+VENV_REQS     := $(SCRIPTS_ROOT)/requirements.txt
 VENV_READY    := $(VENV)/.ready
 
 venv: $(VENV_READY)
