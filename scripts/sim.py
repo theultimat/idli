@@ -221,6 +221,10 @@ class Idli:
 
     # Write a PREG and invoke the callback.
     def _write_preg(self, reg, value):
+        # Writes to p3 are ignored.
+        if reg == isa.PREGS['pt']:
+            return
+
         value = bool(value & 1)
 
         if self.cb:
