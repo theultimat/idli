@@ -1,4 +1,5 @@
 BUILD_ROOT   := build
+SOURCE_ROOT  := src
 SCRIPTS_ROOT := scripts
 TESTS_ROOT   := tests
 
@@ -66,7 +67,26 @@ SIM_TEST_OUT ?= :-100:-4:10:44:999
 
 SIM := source $(VENV_ACTIVATE) && $(PYTHON) $(SCRIPTS_ROOT)/sim.py
 
-run_sim_test: $(SIM_TEST) $(VENV_READY)
+run_test_sim: $(SIM_TEST) $(VENV_READY)
 	$(SIM) -i $(SIM_TEST_IN) -o $(SIM_TEST_OUT) $<
 
-.PHONY: run_sim_test
+.PHONY: run_test_sim
+
+
+# Convert SystemVerilog to Verilog.
+SV2V_DIR := $(BUILD_ROOT)/sv2v
+
+SV_SOURCES := $(wildcard $(SOURCE_ROOT)/*.sv)
+SV_HEADERS := $(wildcard $(SOURCE_ROOT)/*.svh)
+V_SOURCES  := $(patsubst $(SOURCE_ROOT)/%.sv,$(SV2V_DIR)/%.v,$(SV_SOURCES))
+
+SV2V       := sv2v
+SV2V_FLAGS := -I$(SOURCE_ROOT)
+
+sv2v: $(V_SOURCES)
+
+$(SV2V_DIR)/%.v: $(SOURCE_ROOT)/%.sv $(SV_HEADERS)
+	@mkdir -p $(@D)
+	$(SV2V) $(SV2V_FLAGS) $< > $@
+
+.PHONY: sv2v
