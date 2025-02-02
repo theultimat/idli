@@ -39,10 +39,9 @@ class IdliCallback:
 # accurate!
 class Idli:
     # Initialise and reset the CPU.
-    def __init__(self, path, trace=False, callback=None, uart_in=None):
+    def __init__(self, path, trace=False, callback=None):
         self.trace = trace
         self.cb = callback
-        self.uart_in = uart_in
 
         # Program counter always resets to zero.
         self.pc = 0
