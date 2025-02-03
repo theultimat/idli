@@ -20,7 +20,7 @@ ifeq ($(SIM),verilator)
 
 COMPILE_ARGS += -Wall
 
-EXTRA_ARGS += --trace-fst --trace-structs --trace-params
+EXTRA_ARGS += --trace --trace-fst --trace-structs
 EXTRA_ARGS += --x-assign unique --x-initial unique
 
 PLUSARGS += +verilator+rand+reset+2

@@ -1,7 +1,8 @@
 import struct
 
 import cocotb
-from cocotb.triggers import RisingEdge, FallingEdge
+from cocotb.clock import Clock
+from cocotb.triggers import RisingEdge, FallingEdge, ClockCycles
 
 import sim
 import sqi
@@ -92,7 +93,31 @@ class TestBench:
 
             sio = mem.falling_edge()
 
-            # TODO check the data coming out
+            if sio is not None:
+                # TODO Check output data.
+                raise NotImplementedError()
+
+    # Main simulation function.
+    async def run(self):
+        cocotb.start_soon(Clock(self.dut.gck, 2, units='ns').start())
+
+        for i, mem in enumerate(self.mem):
+            cocotb.start_soon(self._check_sqi(i, mem))
+
+        self.log('BENCH: RESET BEGIN')
+
+        self.dut.rst_n.value = 1
+        await ClockCycles(self.dut.gck, 1)
+
+        self.dut.rst_n.value = 0
+        await ClockCycles(self.dut.gck, 1)
+
+        self.dut.rst_n.value = 1
+
+        self.log('BENCH: RESET COMPLETE')
+
+        # TODO Run until test completion - for now just run for a few cycles.
+        await ClockCycles(self.dut.gck, 10)
 
 
 # Load UART values for test input or output. These files are formatted as a

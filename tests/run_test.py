@@ -27,4 +27,5 @@ async def run_test(dut):
     # Create the test bench for cosimulation.
     bench = tb.TestBench(dut, path, inputs, outputs)
 
-    dut._log.info(f'Hello! {path} {timeout}')
+    # Run the test.
+    await bench.run()
