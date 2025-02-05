@@ -1,0 +1,20 @@
+    .include "wrapper.ia"
+
+gcd:                        # r0 = a, r1 = b
+    eq      p0, r0, r1      # p = a == b
+    ret.p0                  # if (p) return a
+    ltu     p0, r1, r0      # p = b < a
+    ltu     p1, r0, r1      # q = a < b
+    sub.p0  r0, r0, r1      # if (p) a -= b
+    sub.p1  r1, r1, r0      # if (q) b -= a
+    b       @gcd            # goto gcd
+
+main:
+    urx     r0              # a = uart.recv()
+    urx     r1              # b = uart.recv()
+    push    lr..lr          # push(lr)
+    bl      @gcd            # gcd(a, b)
+    pop     lr..lr          # lr = pop()
+    utx     r0              # uart.send(a)
+    movz    r0              # retval = 0
+    ret                     # return retval
