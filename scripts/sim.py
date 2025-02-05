@@ -73,6 +73,8 @@ class Idli:
             'beqz':     self._branch_reg,
             'bnez':     self._branch_reg,
             'bltz':     self._branch_reg,
+            'blez':     self._branch_reg,
+            'bgtz':     self._branch_reg,
             'bgez':     self._branch_reg,
             'eq':       self._cmp,
             'ne':       self._cmp,
@@ -84,6 +86,8 @@ class Idli:
             'eqz':      self._cmp,
             'nez':      self._cmp,
             'ltz':      self._cmp,
+            'lez':      self._cmp,
+            'gtz':      self._cmp,
             'gez':      self._cmp,
             'putpf':    self._putp,
             'putpt':    self._putp,
@@ -317,6 +321,10 @@ class Idli:
             branch = lhs != rhs
         elif op == 'lt':
             branch = lhs < rhs
+        elif op == 'le':
+            branch = lhs <= rhs
+        elif op == 'gt':
+            branch = lhs > rhs
         else:
             branch = lhs >= rhs
 
@@ -372,6 +380,10 @@ class Idli:
             value = lhs != rhs
         elif instr.name.startswith('lt'):
             value = lhs < rhs
+        elif instr.name.startswith('le'):
+            value = lhs <= rhs
+        elif instr.name.startswith('gt'):
+            value = lhs > rhs
         else:
             value = lhs >= rhs
 

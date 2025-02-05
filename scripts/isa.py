@@ -62,7 +62,9 @@ ENCODINGS = {
     'beqz':     '0000000100bbbccc',
     'bnez':     '0000000101bbbccc',
     'bltz':     '0000000110bbbccc',
-    'bgez':     '0000000111bbbccc',
+    'blez':     '0000000111bbbccc',
+    'bgtz':     '0000001111bbbccc',
+    'bgez':     '0000010111bbbccc',
 
     # Compare two sources and store the result in a predicate register.
     'eq':       '01000pp0qqbbbccc',
@@ -79,11 +81,13 @@ ENCODINGS = {
     'eqz':      '01011pp1qqbbb000',
     'nez':      '01011pp1qqbbb001',
     'ltz':      '01011pp1qqbbb010',
-    'gez':      '01011pp1qqbbb011',
+    'lez':      '01011pp1qqbbb011',
+    'gtz':      '01011pp1qqbbb100',
+    'gez':      '01011pp1qqbbb101',
 
     # Clear or set PREG.
-    'putpf':    '01011pp1qq000100',
-    'putpt':    '01011pp1qq001100',
+    'putpf':    '01011pp1qq000110',
+    'putpt':    '01011pp1qq001110',
 
     # Shift and rotate.
     'srl':      '01100ppaaabbbccc',
@@ -181,6 +185,8 @@ SYNTAX = {
     'beqz':     'beqz {b}, {c}',
     'bnez':     'bnez {b}, {c}',
     'bltz':     'bltz {b}, {c}',
+    'blez':     'blez {b}, {c}',
+    'bgtz':     'bgtz {b}, {c}',
     'bgez':     'bgez {b}, {c}',
     'eq':       'eq.{p} {q}, {b}, {c}',
     'ne':       'ne.{p} {q}, {b}, {c}',
@@ -192,6 +198,8 @@ SYNTAX = {
     'eqz':      'eqz.{p} {q}, {b}',
     'nez':      'nez.{p} {q}, {b}',
     'ltz':      'ltz.{p} {q}, {b}',
+    'lez':      'lez.{p} {q}, {b}',
+    'gtz':      'gtz.{p} {q}, {b}',
     'gez':      'gez.{p} {q}, {b}',
     'putpf':    'putpf.{p} {q}',
     'putpt':    'putpt.{p} {q}',
@@ -252,6 +260,7 @@ SYNONYMS = {
 
     # Return from function call.
     'ret':  ('ret.{p} lr', 'jt', {'c': GREGS['lr']}),
+    'retf': ('retf.{p} lr', 'jf', {'c': GREGS['lr']}),
 
     # Get value of predicate register.
     'getp': ('getp {a}, {p}', 'inc', {}),
