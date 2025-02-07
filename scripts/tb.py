@@ -78,18 +78,29 @@ class TestBench:
 
     # Simulate the specified SQI memory.
     async def _check_sqi(self, mem_id, mem):
+        if mem_id == 0:
+            dut_sck = self.dut.sqi_sck_lo
+            dut_cs = self.dut.sqi_cs_lo
+            dut_sio_in = self.dut.sqi_sio_in_lo
+            dut_sio_out = self.dut.sqi_sio_out_lo
+        else:
+            dut_sck = self.dut.sqi_sck_hi
+            dut_cs = self.dut.sqi_cs_hi
+            dut_sio_in = self.dut.sqi_sio_in_hi
+            dut_sio_out = self.dut.sqi_sio_out_hi
+
         # Wait for the chip to come out of reset.
         await RisingEdge(self.dut.rst_n)
 
         while True:
-            await RisingEdge(self.dut.sqi_sck)
+            await RisingEdge(dut_sck)
 
-            cs = self.dut.sqi_cs.value
-            sio = (self.dut.sqi_sio_in.value >> (mem_id * 4)) & 0xf
+            cs = dut_cs.value
+            sio = dut_sio_in.value
 
             mem.rising_edge(cs, sio)
 
-            await FallingEdge(self.dut.sqi_gck)
+            await FallingEdge(dut_sck)
 
             sio = mem.falling_edge()
 

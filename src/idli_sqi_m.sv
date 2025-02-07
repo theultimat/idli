@@ -8,9 +8,11 @@ module idli_sqi_m import idli_pkg::*; (
   input  var logic  i_sqi_gck,
   input  var logic  i_sqi_rst_n,
 
-  // SQI control signals. These are shared between the two memories.
-  output var logic  o_sqi_sck,
-  output var logic  o_sqi_cs,
+  // SQI control signals. The second memory is half a clock cycle behind the
+  // first, so the core, which is running at twice the clock rate, can receive
+  // four bits of data per cycle.
+  output var logic  [SQI_NUM-1:0] o_sqi_sck,
+  output var logic  [SQI_NUM-1:0] o_sqi_cs,
 
   // SQI data ins and outs, one for each attached memory.
   input  var sqi_data_t [SQI_NUM-1:0] i_sqi_sio,

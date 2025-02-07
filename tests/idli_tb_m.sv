@@ -10,12 +10,14 @@ module idli_tb_m import idli_pkg::*; ();
   logic rst_n;
 
   // SQI signals. Inputs are driven by the bench, outputs are presented.
-  logic       sqi_sck;
-  logic       sqi_cs;
-  sqi_data_t  sqi_sio_in_lo;
-  sqi_data_t  sqi_sio_in_hi;
-  sqi_data_t  sqi_sio_out_lo;
-  sqi_data_t  sqi_sio_out_hi;
+  logic      sqi_sck_hi;
+  logic      sqi_sck_lo;
+  logic      sqi_cs_hi;
+  logic      sqi_cs_lo;
+  sqi_data_t sqi_sio_in_hi;
+  sqi_data_t sqi_sio_in_lo;
+  sqi_data_t sqi_sio_out_hi;
+  sqi_data_t sqi_sio_out_lo;
 
 
   // Instantiate the top-level core.
@@ -23,8 +25,8 @@ module idli_tb_m import idli_pkg::*; ();
     .i_top_gck    (gck),
     .i_top_rst_n  (rst_n),
 
-    .o_top_sck    (sqi_sck),
-    .o_top_cs     (sqi_cs),
+    .o_top_sck    ({sqi_sck_hi, sqi_sck_lo}),
+    .o_top_cs     ({sqi_cs_hi, sqi_cs_lo}),
     .i_top_sio    ({sqi_sio_in_hi, sqi_sio_in_lo}),
     .o_top_sio    ({sqi_sio_out_hi, sqi_sio_out_lo})
   );

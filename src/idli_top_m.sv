@@ -8,8 +8,8 @@ module idli_top_m import idli_pkg::*; (
   input  var logic                    i_top_rst_n,
 
   // Memory interface.
-  output var logic                    o_top_sck,
-  output var logic                    o_top_cs,
+  output var logic      [SQI_NUM-1:0] o_top_sck,
+  output var logic      [SQI_NUM-1:0] o_top_cs,
   input  var sqi_data_t [SQI_NUM-1:0] i_top_sio,
   output var sqi_data_t [SQI_NUM-1:0] o_top_sio
 );
