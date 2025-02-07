@@ -1,0 +1,16 @@
+    .include "wrapper.ia"
+
+main:
+    utxb    'H'
+    utxb    'e'
+    utxb    'l'
+    utxb    'l'
+    utxb    'o'
+    utxb    32      # Assembler has a bug on parsing ' ' so avoid for now...
+    utxb    'W'
+    utxb    'o'
+    utxb    'r'
+    utxb    'l'
+    utxb    'd'
+    utxb    '!'
+    ret
