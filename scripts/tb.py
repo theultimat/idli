@@ -71,11 +71,11 @@ class TestBench:
                 lo = ((data & 0x0f) >> 0) | ((data & 0x0f00) >> 4)
                 hi = ((data & 0xf0) >> 4) | ((data & 0xf000) >> 8)
 
-                self.mem[0].backdoor_load(addr, lo)
-                self.mem[1].backdoor_load(addr, hi)
+                self.mem[0].backdoor_load(addr, hi)
+                self.mem[1].backdoor_load(addr, lo)
 
-                self.log(f'SQI0: BACKDOOR addr=0x{addr:04x} data=0x{lo:02x}')
-                self.log(f'SQI1: BACKDOOR addr=0x{addr:04x} data=0x{hi:02x}')
+                self.log(f'SQI0: BACKDOOR addr=0x{addr:04x} data=0x{hi:02x}')
+                self.log(f'SQI1: BACKDOOR addr=0x{addr:04x} data=0x{lo:02x}')
 
                 addr += 1
 
@@ -108,8 +108,9 @@ class TestBench:
             sio = mem.falling_edge()
 
             if sio is not None:
-                # TODO Check output data.
-                raise NotImplementedError()
+                dut_sio_in.value = sio
+
+            # TODO Check stores
 
     # Main simulation function.
     async def run(self):
