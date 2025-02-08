@@ -13,7 +13,7 @@ SQI_MODE_STR = {
 
 # Main class which implements the model.
 class SQIMemory:
-    def __init__(self, verbose=False):
+    def __init__(self, verbose=False, log=print):
         # Size of the memory in bytes.
         self.size = 1 << 16
 
@@ -29,8 +29,10 @@ class SQIMemory:
         self.state = None
         self.mode = None
 
-        # Whether verbose output tracing should be enabled.
+        # Whether verbose output tracing should be enabled and the log function
+        # to use when doing so.
         self.verbose =  verbose
+        self.log = log
 
     # Backdoor load data into the memory.
     def backdoor_load(self, addr, data):
@@ -46,7 +48,7 @@ class SQIMemory:
         if cs != 0:
             if self.addr is not None or self.state is not None:
                 if self.verbose:
-                    print('Resetting SQI memory.')
+                    self.log('Resetting SQI memory.')
 
                 if self.state in ('read1', 'write1'):
                     raise Exception(f'CS pulled low half way through a byte!')
@@ -71,7 +73,7 @@ class SQIMemory:
 
             if self.verbose:
                 mode_str = SQI_MODE_STR[self.mode]
-                print(f'SQI command: {mode_str} (0x{self.mode:04x})')
+                self.log(f'SQI command: {mode_str} (0x{self.mode:04x})')
         elif self.state in ('addr0', 'addr1', 'addr2', 'addr3'):
             # Read address data from the input pins.
             stage = int(self.state[-1])
@@ -83,7 +85,7 @@ class SQIMemory:
 
             if stage == 3:
                 if self.verbose:
-                    print(f'SQI address: 0x{self.addr:04x}')
+                    self.log(f'SQI address: 0x{self.addr:04x}')
 
                 if self.mode == SQI_MODE_READ:
                     self.state = 'dummy0'
@@ -123,7 +125,7 @@ class SQIMemory:
             self.state = 'write0'
 
             if self.verbose:
-                print('SQI write 0x{self.addr:04x}: 0x{value:02x}')
+                self.log('SQI write 0x{self.addr:04x}: 0x{value:02x}')
 
             # Increment the address.
             self.addr = (self.addr + 1) & self.addr_mask
@@ -141,7 +143,7 @@ class SQIMemory:
 
         if self.state[-1] == '0':
             if self.verbose:
-                print('SQI read 0x{self.addr}: 0x{value:02x}')
+                self.log('SQI read 0x{self.addr}: 0x{value:02x}')
 
             value = (value >> 4) & 0xf
         else:

@@ -52,7 +52,10 @@ class TestBench:
         self.cb = TestBenchCallback(self, uart_in, uart_out)
         self.sim = sim.Idli(path, callback=self.cb)
 
-        self.mem = [sqi.SQIMemory(), sqi.SQIMemory()]
+        self.mem = [
+            sqi.SQIMemory(verbose=True, log=lambda x: self.log(f'SQI0: {x}')),
+            sqi.SQIMemory(verbose=True, log=lambda x: self.log(f'SQI1: {x}')),
+        ]
         self._backdoor_load(path)
 
         self.log('BENCH: INIT COMPLETE')
