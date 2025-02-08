@@ -125,7 +125,7 @@ class SQIMemory:
             self.state = 'write0'
 
             if self.verbose:
-                self.log('SQI write 0x{self.addr:04x}: 0x{value:02x}')
+                self.log(f'SQI write 0x{self.addr:04x}: 0x{value:02x}')
 
             # Increment the address.
             self.addr = (self.addr + 1) & self.addr_mask
@@ -134,7 +134,7 @@ class SQIMemory:
 
     # Falling edge of the clock, returning any generated data if required.
     def falling_edge(self):
-        if self.state not in('read0', 'read1'):
+        if self.state not in ('read0', 'read1'):
             return None
 
         value = self.data[self.addr]
@@ -143,7 +143,7 @@ class SQIMemory:
 
         if self.state[-1] == '0':
             if self.verbose:
-                self.log('SQI read 0x{self.addr}: 0x{value:02x}')
+                self.log(f'SQI read 0x{self.addr}: 0x{value:02x}')
 
             value = (value >> 4) & 0xf
         else:
