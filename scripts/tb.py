@@ -99,7 +99,7 @@ class TestBench:
             await RisingEdge(dut_sck)
 
             cs = dut_cs.value
-            sio = dut_sio_in.value
+            sio = dut_sio_out.value
 
             mem.rising_edge(cs, sio)
 
@@ -120,18 +120,18 @@ class TestBench:
 
         self.log('BENCH: RESET BEGIN')
 
-        self.dut.rst_n.value = 1
+        self.dut.rst_n.setimmediatevalue(1)
         await ClockCycles(self.dut.gck, 1)
 
-        self.dut.rst_n.value = 0
+        self.dut.rst_n.setimmediatevalue(0)
         await ClockCycles(self.dut.gck, 1)
 
-        self.dut.rst_n.value = 1
+        self.dut.rst_n.setimmediatevalue(1)
 
         self.log('BENCH: RESET COMPLETE')
 
         # TODO Run until test completion - for now just run for a few cycles.
-        await ClockCycles(self.dut.gck, 10)
+        await ClockCycles(self.dut.gck, 40)
 
 
 # Load UART values for test input or output. These files are formatted as a
