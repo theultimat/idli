@@ -61,7 +61,7 @@ $(BUILD_ROOT)/%.iout.dis: $(BUILD_ROOT)/%.iout $(VENV_READY)
 
 
 # Run a single test on the simulator.
-SIM_TEST         ?= $(BUILD_ROOT)/$(ASM_DIR)/bsort.iout
+SIM_TEST         ?= $(BUILD_ROOT)/$(ASM_DIR)/hello.iout
 SIM_TEST_IN      ?= $(ASM_DIR)/$(notdir $(basename $(SIM_TEST))).in
 SIM_TEST_OUT     ?= $(ASM_DIR)/$(notdir $(basename $(SIM_TEST))).out
 SIM_TEST_TIMEOUT ?= 5000
