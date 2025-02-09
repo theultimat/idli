@@ -445,6 +445,19 @@ class Instruction:
 
         return SYNTAX[self.name].format(**ops)
 
+    # Reverse the nibbles of the 16b value. We do this for instruction encodings
+    # as the core will see nibbles in reverse order to what's actually stored in
+    # the memory, and we want to make sure that the decoder sees the "top" MSBs
+    # as defined in the encoding string first.
+    @staticmethod
+    def _reverse_nibbles(enc):
+        out = 0
+        out |= (enc & 0xf000) >> 12
+        out |= (enc & 0x0f00) >>  4
+        out |= (enc & 0x00f0) <<  4
+        out |= (enc & 0x000f) << 12
+        return out
+
     # Encode the instruction into raw bytes.
     def encode(self, error_prefix=''):
         bits = ENCODINGS[self.name]
@@ -466,7 +479,8 @@ class Instruction:
             bits = ''.join(next(enc) if x == name else x for x in bits)
 
         # Generate bytes for the instruction.
-        enc = struct.pack('>H', int(bits, 2))
+        enc = Instruction._reverse_nibbles(int(bits, 2))
+        enc = struct.pack('>H', enc)
 
         # Append with immediate value if present.
         imm = self.ops.get('imm')
@@ -495,6 +509,7 @@ class Instruction:
 
         # Read first 16b chunk and identify the instruction.
         enc, = struct.unpack('>H', this_half)
+        enc = Instruction._reverse_nibbles(enc)
         names = []
 
         for name, opcode in OPCODES.items():
