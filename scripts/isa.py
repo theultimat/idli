@@ -295,7 +295,7 @@ def parse_imm(data, error_prefix='', bits=16):
     # is too large then subtract the bias to get back into rage.
     bias = 1 << (bits - 1)
     if imm >= bias:
-        imm -= bias
+        imm -= 1 << bits
 
     # If the immediate is out of range we have a problem.
     if imm >= bias:
