@@ -31,4 +31,12 @@ module idli_top_m import idli_pkg::*; (
     .o_sqi_data_vld (sqi_rd_data_vld)
   );
 
+  idli_decode_m decode_u (
+    .i_dcd_gck      (i_top_gck),
+    .i_dcd_rst_n    (i_top_rst_n),
+
+    .i_dcd_enc      (sqi_rd_data),
+    .i_dcd_enc_vld  (sqi_rd_data_vld)
+  );
+
 endmodule
