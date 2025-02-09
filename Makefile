@@ -45,17 +45,13 @@ OBJDUMP := source $(VENV_ACTIVATE) && $(PYTHON) $(SCRIPTS_ROOT)/objdump.py
 
 TEST_SOURCES := $(filter-out $(WRAPPER),$(wildcard $(ASM_DIR)/*.ia))
 TEST_BINS    := $(patsubst %.ia,$(BUILD_ROOT)/%.iout,$(TEST_SOURCES))
-TEST_DISS    := $(addsuffix .dis,$(TEST_BINS))
 
-tests: venv $(TEST_BINS) $(TEST_DISS)
+tests: venv $(TEST_BINS)
 
 $(BUILD_ROOT)/%.iout: %.ia $(WRAPPER) $(VENV_READY)
 	@mkdir -p $(@D)
 	$(AS) -o $@ $<
-
-$(BUILD_ROOT)/%.iout.dis: $(BUILD_ROOT)/%.iout $(VENV_READY)
-	@mkdir -p $(@D)
-	$(OBJDUMP) $< > $@
+	$(OBJDUMP) $@ > $@.dis
 
 .PHONY: tests
 
