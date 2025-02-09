@@ -148,24 +148,24 @@ ENCODINGS = {
     'addpc':    '11110ppaaa010ccc',
 
     # Branch if predicate true or false.
-    'bt':       '11110pp000001ccc',
-    'bf':       '11110pp000011ccc',
+    'bt':       '11111pp000001ccc',
+    'bf':       '11111pp000011ccc',
 
     # Branch and link on predicate.
-    'blt':      '11110pp000101ccc',
-    'blf':      '11110pp000111ccc',
+    'blt':      '11111pp000101ccc',
+    'blf':      '11111pp000111ccc',
 
     # Jump if predicate true or false.
-    'jt':       '11110pp001001ccc',
-    'jf':       '11110pp001011ccc',
+    'jt':       '11111pp001001ccc',
+    'jf':       '11111pp001011ccc',
 
     # Jump and link on predicate.
-    'jlt':      '11110pp001101ccc',
-    'jlf':      '11110pp001111ccc',
+    'jlt':      '11111pp001101ccc',
+    'jlf':      '11111pp001111ccc',
 
     # Send 8b or 16b over UART.
-    'utxb':     '11110pp010001ccc',
-    'utx':      '11110pp010011ccc',
+    'utxb':     '11111pp010001ccc',
+    'utx':      '11111pp010011ccc',
 }
 
 OPCODES = {
