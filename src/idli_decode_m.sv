@@ -13,45 +13,52 @@ module idli_decode_m import idli_pkg::*; (
 );
 
   // As the instruction is decoded 4b per cycle we have a state machine to
-  // remember our progress.
-  typedef enum logic [4:0] {
+  // remember our progress. Which cycle of decode we're currently in is
+  // encoded in the top 2b of the state.
+  typedef enum logic [5:0] {
     // First decode cycle.
-    STATE_INIT,
+    STATE_INIT                      = 6'b000000,
 
     // Second decode cycle.
-    STATE_NOP_BZ,
-    STATE_EQ_LT,
-    STATE_GE_PUTP_CMPZ,
-    STATE_SRX,
-    STATE_ROR_SLL,
-    STATE_MEM_WB,
-    STATE_MEM,
-    STATE_STACK_PERM_INV_INC_URX_0,
-    STATE_ADD_SUB,
-    STATE_AND_ANDN,
-    STATE_OR_XOR,
-    STATE_MOV_PC_BP_JP_UTX,
+    STATE_NOP_BZ                    = 6'b010000,
+    STATE_EQ_LT                     = 6'b010001,
+    STATE_GE_PUTP_CMPZ              = 6'b010010,
+    STATE_SRX                       = 6'b010011,
+    STATE_ROR_SLL                   = 6'b010100,
+    STATE_MEM_WB                    = 6'b010101,
+    STATE_MEM                       = 6'b010110,
+    STATE_STACK_PERM_INV_INC_URX_0  = 6'b010111,
+    STATE_ADD_SUB                   = 6'b011000,
+    STATE_AND_ANDN                  = 6'b011001,
+    STATE_OR_XOR                    = 6'b011010,
+    STATE_MOV_PC_BP_JP_UTX          = 6'b011011,
 
     // Third decode cyle.
-    STATE_NOP_0,
-    STATE_BZ,
-    STATE_QBC,
-    STATE_CMPZ_PUTP_0,
-    STATE_ABC,
-    STATE_STACK_PERM_INV_INC_URX_1,
-    STATE_BP_JP_UTX,
-    STATE_MOV_PC,
+    STATE_NOP_0                     = 6'b100000,
+    STATE_BZ                        = 6'b100001,
+    STATE_QBC                       = 6'b100010,
+    STATE_CMPZ_PUTP_0               = 6'b100011,
+    STATE_ABC                       = 6'b100100,
+    STATE_STACK_PERM_INV_INC_URX_1  = 6'b100101,
+    STATE_BP_JP_UTX                 = 6'b100110,
+    STATE_MOV_PC                    = 6'b100111,
 
     // Final decode cycle.
-    STATE_NOP_1,
-    STATE_BC,
-    STATE_CMPZ_PUTP_1,
-    STATE_STACK_PERM_INV_INC_URX_2
+    STATE_NOP_1                     = 6'b110000,
+    STATE_BC                        = 6'b110001,
+    STATE_CMPZ_PUTP_1               = 6'b110010,
+    STATE_STACK_PERM_INV_INC_URX_2  = 6'b110011
   } state_t;
 
   // Current and next state for the decoder.
   state_t state_q;
   state_t state_d;
+
+  // Which cycle of the decode operation we're currently on.
+  logic [1:0] cycle_q;
+
+  // Decoded operation state.
+  op_t op_q;
 
   // Flop the new state.
   always_ff @(posedge i_dcd_gck, negedge i_dcd_rst_n) begin
@@ -152,6 +159,38 @@ module idli_decode_m import idli_pkg::*; (
         state_d = STATE_INIT;
       end
     endcase
+  end
+
+  // Extract the current cycle from the state.
+  always_comb cycle_q = state_q[5:4];
+
+  // Flop the new operand values during decode. Operands are always in the
+  // same location so these can be flopped based on the current cycle
+  // regardless of which instruction is actually being processed. Having more
+  // accurate enables to control the flopping would probably save power but we
+  // aren't too concerned abot that here.
+  always_ff @(posedge i_dcd_gck) begin
+    if (i_dcd_enc_vld) begin
+      if (cycle_q == 2'd1) begin
+        op_q.a[2] <= i_dcd_enc[0];
+
+        // Special case here for P - all instructions except NOP and branch
+        // and compare on register are predicated, with these two special
+        // cases always forced to be PT.
+        if (state_q == STATE_NOP_BZ) begin
+          op_q.p <= PREG_PT;
+        end else begin
+          op_q.p <= preg_t'(i_dcd_enc[2:1]);
+        end
+      end else if (cycle_q == 2'd2) begin
+        op_q.q      <= preg_t'(i_dcd_enc[3:2]);
+        op_q.a[1:0] <= i_dcd_enc[3:2];
+        op_q.b[2:1] <= i_dcd_enc[1:0];
+      end else if (cycle_q == 2'd3) begin
+        op_q.b[0] <= i_dcd_enc[3];
+        op_q.c    <= greg_t'(i_dcd_enc[2:0]);
+      end
+    end
   end
 
 endmodule
