@@ -189,6 +189,9 @@ module idli_decode_m import idli_pkg::*; (
       end else if (cycle_q == 2'd3) begin
         op_q.b[0] <= i_dcd_enc[3];
         op_q.c    <= greg_t'(i_dcd_enc[2:0]);
+
+        // If C is all ones then we expect an immediate in the next 16b.
+        op_q.imm <= &i_dcd_enc[2:0];
       end
     end
   end

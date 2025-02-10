@@ -30,6 +30,9 @@ typedef struct packed {
   greg_t  a;
   greg_t  b;
   greg_t  c;
+
+  // Whether to read C or take the next 16b as an immediate.
+  logic imm;
 } op_t;
 
 endpackage
