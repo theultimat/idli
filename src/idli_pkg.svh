@@ -31,6 +31,11 @@ typedef struct packed {
   greg_t  b;
   greg_t  c;
 
+  // Whether operand values are valid, excluding P which is always valid.
+  logic a_vld;
+  logic b_vld;
+  logic c_vld;
+
   // Whether to read C or take the next 16b as an immediate.
   logic imm;
 } op_t;

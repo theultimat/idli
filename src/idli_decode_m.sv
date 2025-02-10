@@ -39,15 +39,18 @@ module idli_decode_m import idli_pkg::*; (
     STATE_QBC                       = 6'b100010,
     STATE_CMPZ_PUTP_0               = 6'b100011,
     STATE_ABC                       = 6'b100100,
-    STATE_STACK_PERM_INV_INC_URX_1  = 6'b100101,
-    STATE_BP_JP_UTX                 = 6'b100110,
-    STATE_MOV_PC                    = 6'b100111,
+    STATE_STACK_PERM_INV_0          = 6'b100101,
+    STATE_INC_URX_0                 = 6'b100110,
+    STATE_BP_JP_UTX                 = 6'b100111,
+    STATE_MOV_PC                    = 6'b101000,
 
     // Final decode cycle.
     STATE_NOP_1                     = 6'b110000,
     STATE_BC                        = 6'b110001,
-    STATE_CMPZ_PUTP_1               = 6'b110010,
-    STATE_STACK_PERM_INV_INC_URX_2  = 6'b110011
+    STATE_C                         = 6'b110010,
+    STATE_CMPZ_PUTP_1               = 6'b110011,
+    STATE_STACK_PERM_INV_1          = 6'b110100,
+    STATE_INC_URX_1                 = 6'b110101
   } state_t;
 
   // Current and next state for the decoder.
@@ -59,6 +62,11 @@ module idli_decode_m import idli_pkg::*; (
 
   // Decoded operation state.
   op_t op_q;
+
+  // Operand valid signals.
+  logic a_vld;
+  logic b_vld;
+  logic c_vld;
 
   // Flop the new state.
   always_ff @(posedge i_dcd_gck, negedge i_dcd_rst_n) begin
@@ -115,9 +123,8 @@ module idli_decode_m import idli_pkg::*; (
         endcase
       end
       STATE_STACK_PERM_INV_INC_URX_0: begin
-        // We don't have anymore operation bits yet so keep going into the
-        // next cycle.
-        state_d = STATE_STACK_PERM_INV_INC_URX_1;
+        // Top bit being set indicates this is INC/DEC/URX[B].
+        state_d = i_dcd_enc[3] ? STATE_INC_URX_0 : STATE_STACK_PERM_INV_0;
       end
       STATE_SRX,
       STATE_ROR_SLL,
@@ -140,19 +147,26 @@ module idli_decode_m import idli_pkg::*; (
       end
       STATE_BZ,
       STATE_QBC,
-      STATE_ABC,
-      STATE_MOV_PC,
-      STATE_BP_JP_UTX: begin
+      STATE_ABC: begin
         // We're now fully decoded so parse B and C operands.
         state_d = STATE_BC;
+      end
+      STATE_MOV_PC,
+      STATE_BP_JP_UTX: begin
+        // Only parsing of C remains.
+        state_d = STATE_C;
       end
       STATE_CMPZ_PUTP_0: begin
         // No more opcode bits in this cycle so keep going.
         state_d = STATE_CMPZ_PUTP_1;
       end
-      STATE_STACK_PERM_INV_INC_URX_1: begin
+      STATE_STACK_PERM_INV_0: begin
         // No more opcode bits, continue.
-        state_d = STATE_STACK_PERM_INV_INC_URX_2;
+        state_d = STATE_STACK_PERM_INV_1;
+      end
+      STATE_INC_URX_0: begin
+        // No more opcode bits, continue.
+        state_d = STATE_INC_URX_1;
       end
       default: begin
         // All states return back to the start for the next instruction.
@@ -191,7 +205,40 @@ module idli_decode_m import idli_pkg::*; (
         op_q.c    <= greg_t'(i_dcd_enc[2:0]);
 
         // If C is all ones then we expect an immediate in the next 16b.
-        op_q.imm <= &i_dcd_enc[2:0];
+        op_q.imm <= &i_dcd_enc[2:0] && c_vld;
+      end
+    end
+  end
+
+  // Operand A is always known to be valid on decode cycle two.
+  always_comb a_vld = state_q == STATE_ABC
+                   || state_q == STATE_STACK_PERM_INV_0
+                   || state_q == STATE_INC_URX_0
+                   || state_q == STATE_MOV_PC;
+
+  // We can only be sure if B is valid on the final cycle of decode.
+  always_comb begin
+    case (state_q)
+      STATE_BC:               b_vld = '1;
+      STATE_STACK_PERM_INV_1: b_vld = '1;
+      STATE_INC_URX_1:        b_vld = ~i_dcd_enc[1];
+      default:                b_vld = '0;
+    endcase
+  end
+
+  // C is decoded on the final cycle so we must know it's valid when we get
+  // there.
+  always_comb c_vld = state_q == STATE_BC
+                   || state_q == STATE_C;
+
+  // Flop operand valid signals on their appropriate cycles.
+  always_ff @(posedge i_dcd_gck) begin
+    if (i_dcd_enc_vld) begin
+      if (cycle_q == 2'd2) begin
+        op_q.a_vld <= a_vld;
+      end else if (cycle_q == 2'd3) begin
+        op_q.b_vld <= b_vld;
+        op_q.c_vld <= c_vld;
       end
     end
   end
