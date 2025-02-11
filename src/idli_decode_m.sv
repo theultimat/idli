@@ -209,9 +209,6 @@ module idli_decode_m import idli_pkg::*; (
     end else if (cycle_q == 2'd3) begin
         op_d.b[0] = i_dcd_enc[3];
         op_d.c    = greg_t'(i_dcd_enc[2:0]);
-
-        // If C is all ones then we expect an immediate in the next 16b.
-        op_d.imm = &i_dcd_enc[2:0] && op_d.c_vld;
     end
   end
 
@@ -267,5 +264,28 @@ module idli_decode_m import idli_pkg::*; (
   // Instruction is valid if we're in a final state, unless it's a NOP as
   // these can just be thrown away in decode.
   always_comb o_dcd_op_vld = (cycle_q == 2'd3) && state_q != STATE_NOP_1;
+
+  // Determine where to take operand B from.
+  always_comb begin
+    case (state_q)
+      STATE_ABC:    op_d.b_src = B_SRC_REG;
+      STATE_MOV_PC: op_d.b_src = i_dcd_enc[0] ? B_SRC_PC : B_SRC_ZERO;
+      default:      op_d.b_src = op_q.b_src;
+    endcase
+  end
+
+  // C is always read from the register unless it's the immediate.
+  always_comb op_d.c_src = &i_dcd_enc[2:0] ? C_SRC_IMM : C_SRC_REG;
+
+  // Determine the ALU operation to execute.
+  always_comb begin
+    case (state_q)
+      STATE_ADD_SUB:          op_d.alu_op = ALU_OP_ADD;
+      STATE_AND_ANDN:         op_d.alu_op = ALU_OP_AND;
+      STATE_OR_XOR:           op_d.alu_op = i_dcd_enc[3] ? ALU_OP_XOR : ALU_OP_OR;
+      STATE_MOV_PC_BP_JP_UTX: op_d.alu_op = ALU_OP_ADD;
+      default:                op_d.alu_op = op_q.alu_op;
+    endcase
+  end
 
 endmodule

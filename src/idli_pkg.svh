@@ -22,6 +22,27 @@ typedef logic [1:0] preg_t;
 // Identifier for the always true predicate register.
 localparam preg_t PREG_PT = preg_t'(2'd3);
 
+// Supported ALU operations.
+typedef enum logic [1:0] {
+  ALU_OP_ADD,
+  ALU_OP_AND,
+  ALU_OP_OR,
+  ALU_OP_XOR
+} alu_op_t;
+
+// Possible source locations for operand B.
+typedef enum logic [1:0] {
+  B_SRC_REG,
+  B_SRC_ZERO,
+  B_SRC_PC
+} b_src_t;
+
+// Possible source locations for operand C.
+typedef enum logic {
+  C_SRC_REG,
+  C_SRC_IMM
+} c_src_t;
+
 // Decoded operation. Contains control signals for execution.
 typedef struct packed {
   // Register identifiers.
@@ -36,8 +57,12 @@ typedef struct packed {
   logic b_vld;
   logic c_vld;
 
-  // Whether to read C or take the next 16b as an immediate.
-  logic imm;
+  // Where to take source operands from.
+  b_src_t b_src;
+  c_src_t c_src;
+
+  // ALU control signals.
+  alu_op_t alu_op;
 } op_t;
 
 endpackage
