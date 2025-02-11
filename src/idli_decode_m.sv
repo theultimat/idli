@@ -60,13 +60,11 @@ module idli_decode_m import idli_pkg::*; (
   // Which cycle of the decode operation we're currently on.
   logic [1:0] cycle_q;
 
-  // Decoded operation state.
+  // Decoded operation state. We need the flopped form to hold the decoded
+  // state while we process the rest of the instruction and the non-flopped
+  // form is output on the final cycle to be flopped by the backend.
   op_t op_q;
-
-  // Operand valid signals.
-  logic a_vld;
-  logic b_vld;
-  logic c_vld;
+  op_t op_d;
 
   // Flop the new state.
   always_ff @(posedge i_dcd_gck, negedge i_dcd_rst_n) begin
@@ -178,68 +176,83 @@ module idli_decode_m import idli_pkg::*; (
   // Extract the current cycle from the state.
   always_comb cycle_q = state_q[5:4];
 
-  // Flop the new operand values during decode. Operands are always in the
-  // same location so these can be flopped based on the current cycle
-  // regardless of which instruction is actually being processed. Having more
-  // accurate enables to control the flopping would probably save power but we
-  // aren't too concerned abot that here.
-  always_ff @(posedge i_dcd_gck) begin
-    if (i_dcd_enc_vld) begin
-      if (cycle_q == 2'd1) begin
-        op_q.a[2] <= i_dcd_enc[0];
+  // Extract operand values during decode. These are always in the same
+  // location so can be extracted based on the current cycle regardless of
+  // which instruction is being processed. Having more accurate enables would
+  // probably improve power but we aren't too concerned about that here.
+  always_comb begin
+    op_d.p = op_q.p;
+    op_d.q = op_q.q;
+    op_d.a = op_q.a;
+    op_d.b = op_q.b;
+    op_d.c = op_q.c;
+
+    if (cycle_q == 2'd1) begin
+        op_d.a[2] = i_dcd_enc[0];
 
         // Special case here for P - all instructions except NOP and branch
         // and compare on register are predicated, with these two special
         // cases always forced to be PT.
         if (state_q == STATE_NOP_BZ) begin
-          op_q.p <= PREG_PT;
+          op_d.p = PREG_PT;
         end else begin
-          op_q.p <= preg_t'(i_dcd_enc[2:1]);
+          op_d.p = preg_t'(i_dcd_enc[2:1]);
         end
-      end else if (cycle_q == 2'd2) begin
-        op_q.q      <= preg_t'(i_dcd_enc[3:2]);
-        op_q.a[1:0] <= i_dcd_enc[3:2];
-        op_q.b[2:1] <= i_dcd_enc[1:0];
-      end else if (cycle_q == 2'd3) begin
-        op_q.b[0] <= i_dcd_enc[3];
-        op_q.c    <= greg_t'(i_dcd_enc[2:0]);
+    end else if (cycle_q == 2'd2) begin
+        op_d.q      = preg_t'(i_dcd_enc[3:2]);
+        op_d.a[1:0] = i_dcd_enc[3:2];
+        op_d.b[2:1] = i_dcd_enc[1:0];
+    end else if (cycle_q == 2'd3) begin
+        op_d.b[0] = i_dcd_enc[3];
+        op_d.c    = greg_t'(i_dcd_enc[2:0]);
 
         // If C is all ones then we expect an immediate in the next 16b.
-        op_q.imm <= &i_dcd_enc[2:0] && c_vld;
-      end
+        op_d.imm = &i_dcd_enc[2:0] && op_d.c_vld;
+    end
+  end
+
+  // Flop the new value of the instruction - this needs to be done on all
+  // cycles except the final one as we output the non-flopped version anyway.
+  always_ff @(posedge i_dcd_gck) begin
+    if (i_dcd_enc_vld && cycle_q != 2'd3) begin
+      op_q <= op_d;
     end
   end
 
   // Operand A is always known to be valid on decode cycle two.
-  always_comb a_vld = state_q == STATE_ABC
-                   || state_q == STATE_STACK_PERM_INV_0
-                   || state_q == STATE_INC_URX_0
-                   || state_q == STATE_MOV_PC;
+  always_comb begin
+    op_d.a_vld = op_q.a_vld;
+
+    if (cycle_q == 2'd2) begin
+      op_d.a_vld = state_q == STATE_ABC
+                || state_q == STATE_STACK_PERM_INV_0
+                || state_q == STATE_INC_URX_0
+                || state_q == STATE_MOV_PC;
+      end
+  end
 
   // We can only be sure if B is valid on the final cycle of decode.
   always_comb begin
-    case (state_q)
-      STATE_BC:               b_vld = '1;
-      STATE_STACK_PERM_INV_1: b_vld = '1;
-      STATE_INC_URX_1:        b_vld = ~i_dcd_enc[1];
-      default:                b_vld = '0;
-    endcase
+    op_d.b_vld = op_q.b_vld;
+
+    if (cycle_q == 2'd3) begin
+      case (state_q)
+        STATE_BC:               op_d.b_vld = '1;
+        STATE_STACK_PERM_INV_1: op_d.b_vld = '1;
+        STATE_INC_URX_1:        op_d.b_vld = ~i_dcd_enc[1];
+        default:                op_d.b_vld = '0;
+      endcase
+    end
   end
 
   // C is decoded on the final cycle so we must know it's valid when we get
   // there.
-  always_comb c_vld = state_q == STATE_BC
-                   || state_q == STATE_C;
+  always_comb begin
+    op_d.c_vld = op_q.c_vld;
 
-  // Flop operand valid signals on their appropriate cycles.
-  always_ff @(posedge i_dcd_gck) begin
-    if (i_dcd_enc_vld) begin
-      if (cycle_q == 2'd2) begin
-        op_q.a_vld <= a_vld;
-      end else if (cycle_q == 2'd3) begin
-        op_q.b_vld <= b_vld;
-        op_q.c_vld <= c_vld;
-      end
+    if (cycle_q == 2'd3) begin
+      op_d.c_vld = state_q == STATE_BC
+                || state_q == STATE_C;
     end
   end
 
