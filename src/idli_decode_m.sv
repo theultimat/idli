@@ -9,7 +9,11 @@ module idli_decode_m import idli_pkg::*; (
 
   // Instruction encoding and whether it's valid.
   input  var sqi_data_t i_dcd_enc,
-  input  var logic      i_dcd_enc_vld
+  input  var logic      i_dcd_enc_vld,
+
+  // Decoded instruction and whether it's valid.
+  output var op_t   o_dcd_op,
+  output var logic  o_dcd_op_vld
 );
 
   // As the instruction is decoded 4b per cycle we have a state machine to
@@ -255,5 +259,13 @@ module idli_decode_m import idli_pkg::*; (
                 || state_q == STATE_C;
     end
   end
+
+  // Output the _d of the decoded op so it can be flopped immediately in
+  // execute.
+  always_comb o_dcd_op = op_d;
+
+  // Instruction is valid if we're in a final state, unless it's a NOP as
+  // these can just be thrown away in decode.
+  always_comb o_dcd_op_vld = (cycle_q == 2'd3) && state_q != STATE_NOP_1;
 
 endmodule
