@@ -21,6 +21,21 @@ module idli_ex_m import idli_pkg::*; (
   op_t  op_q;
   logic op_vld_q;
 
+  // Data read from the register file.
+  sqi_data_t  b_data;
+  sqi_data_t  c_data;
+
+
+  // General purpose register file.
+  idli_regs_m regs_u (
+    .i_reg_gck    (i_ex_gck),
+
+    .i_reg_b      (op_q.b),
+    .o_reg_b_data (b_data),
+    .i_reg_c      (op_q.c),
+    .o_reg_c_data (c_data)
+  );
+
 
   // Increment the counter when the instruction is valid.
   always_ff @(posedge i_ex_gck, negedge i_ex_rst_n) begin
