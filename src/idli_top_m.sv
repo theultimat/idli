@@ -52,8 +52,10 @@ module idli_top_m import idli_pkg::*; (
     .i_ex_op      (dcd_op),
     .i_ex_op_vld  (dcd_op_vld),
     // verilator lint_off PINCONNECTEMPTY
-    .o_ex_op_acp  ()
+    .o_ex_op_acp  (),
     // verilator lint_on PINCONNECTEMPTY
+
+    .i_ex_imm     (sqi_rd_data)
   );
 
 endmodule

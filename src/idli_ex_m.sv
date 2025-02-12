@@ -10,7 +10,10 @@ module idli_ex_m import idli_pkg::*; (
   // Decoded instruction and whether we can accept a new one.
   input  var op_t   i_ex_op,
   input  var logic  i_ex_op_vld,
-  output var logic  o_ex_op_acp
+  output var logic  o_ex_op_acp,
+
+  // Immedaite data read from the memory.
+  input  var sqi_data_t i_ex_imm
 );
 
   // Track progress through the instruction using a 2b counter. We process 16b
@@ -22,6 +25,10 @@ module idli_ex_m import idli_pkg::*; (
   logic op_vld_q;
 
   // Data read from the register file.
+  sqi_data_t  b_reg_data;
+  sqi_data_t  c_reg_data;
+
+  // LHS and RHS of operations.
   sqi_data_t  b_data;
   sqi_data_t  c_data;
 
@@ -31,9 +38,9 @@ module idli_ex_m import idli_pkg::*; (
     .i_reg_gck    (i_ex_gck),
 
     .i_reg_b      (op_q.b),
-    .o_reg_b_data (b_data),
+    .o_reg_b_data (b_reg_data),
     .i_reg_c      (op_q.c),
-    .o_reg_c_data (c_data)
+    .o_reg_c_data (c_reg_data)
   );
 
 
@@ -59,6 +66,25 @@ module idli_ex_m import idli_pkg::*; (
       op_q     <= i_ex_op;
       op_vld_q <= i_ex_op_vld;
     end
+  end
+
+  // Determine what the value for operands should be based on the routing
+  // information decoded from the instruction.
+  always_comb begin
+    case (op_q.b_src)
+      B_SRC_REG:  b_data = b_reg_data;
+      B_SRC_ZERO: b_data = '0;
+      B_SRC_PC:   b_data = '0;            // TODO PC not implemented yet.
+      default:    b_data = sqi_data_t'('x);
+    endcase
+  end
+
+  always_comb begin
+    case (op_q.c_src)
+      C_SRC_REG:  c_data = c_reg_data;
+      C_SRC_IMM:  c_data = i_ex_imm;
+      default:    c_data = sqi_data_t'('x);
+    endcase
   end
 
 endmodule
