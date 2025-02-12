@@ -17,6 +17,9 @@ module idli_top_m import idli_pkg::*; (
   sqi_data_t sqi_rd_data;
   logic      sqi_rd_data_vld;
 
+  op_t  dcd_op;
+  logic dcd_op_vld;
+
   idli_sqi_m sqi_u (
     .i_sqi_gck      (i_top_gck),
     .i_sqi_rst_n    (i_top_rst_n),
@@ -38,9 +41,18 @@ module idli_top_m import idli_pkg::*; (
     .i_dcd_enc      (sqi_rd_data),
     .i_dcd_enc_vld  (sqi_rd_data_vld),
 
+    .o_dcd_op       (dcd_op),
+    .o_dcd_op_vld   (dcd_op_vld)
+  );
+
+  idli_ex_m ex_u (
+    .i_ex_gck     (i_top_gck),
+    .i_ex_rst_n   (i_top_rst_n),
+
+    .i_ex_op      (dcd_op),
+    .i_ex_op_vld  (dcd_op_vld),
     // verilator lint_off PINCONNECTEMPTY
-    .o_dcd_op       (),
-    .o_dcd_op_vld   ()
+    .o_ex_op_acp  ()
     // verilator lint_on PINCONNECTEMPTY
   );
 
