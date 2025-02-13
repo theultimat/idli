@@ -43,6 +43,24 @@ module idli_ex_m import idli_pkg::*; (
     .o_reg_c_data (c_reg_data)
   );
 
+  // ALU.
+  idli_alu_m alu_u (
+    .i_alu_gck      (i_ex_gck),
+
+    .i_alu_op       (op_q.alu_op),
+    .i_alu_rhs_inv  ('0), // TODO
+    .i_alu_ctr      (ctr_q),
+
+    .i_alu_lhs      (b_data),
+    .i_alu_rhs      (c_data),
+    .i_alu_cin      ('0),   // TODO
+
+    // verilator lint_off PINCONNECTEMPTY
+    .o_alu_data     (),
+    .o_alu_cout     ()
+    // verilator lint_on PINCONNECTEMPTY
+  );
+
 
   // Increment the counter when the instruction is valid.
   always_ff @(posedge i_ex_gck, negedge i_ex_rst_n) begin
