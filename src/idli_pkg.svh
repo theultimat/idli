@@ -63,6 +63,8 @@ typedef struct packed {
 
   // ALU control signals.
   alu_op_t alu_op;
+  logic    alu_cin;
+  logic    alu_rhs_inv;
 } op_t;
 
 endpackage

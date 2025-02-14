@@ -32,6 +32,11 @@ module idli_ex_m import idli_pkg::*; (
   sqi_data_t  b_data;
   sqi_data_t  c_data;
 
+  // Saved carry to feed back on subsequent cycles.
+  logic carry_q;
+  logic carry_d;
+  logic alu_cin;
+
 
   // General purpose register file.
   idli_regs_m regs_u (
@@ -48,16 +53,16 @@ module idli_ex_m import idli_pkg::*; (
     .i_alu_gck      (i_ex_gck),
 
     .i_alu_op       (op_q.alu_op),
-    .i_alu_rhs_inv  ('0), // TODO
+    .i_alu_rhs_inv  (op_q.alu_rhs_inv),
 
     .i_alu_lhs      (b_data),
     .i_alu_rhs      (c_data),
-    .i_alu_cin      ('0),   // TODO
+    .i_alu_cin      (alu_cin),
 
     // verilator lint_off PINCONNECTEMPTY
     .o_alu_data     (),
-    .o_alu_cout     ()
     // verilator lint_on PINCONNECTEMPTY
+    .o_alu_cout     (carry_d)
   );
 
 
@@ -102,6 +107,17 @@ module idli_ex_m import idli_pkg::*; (
       C_SRC_IMM:  c_data = i_ex_imm;
       default:    c_data = sqi_data_t'('x);
     endcase
+  end
+
+  // Carry in comes from the operation on the first cycle and the previous
+  // output on all other cycles.
+  always_comb alu_cin = |ctr_q ? carry_q : op_q.alu_cin;
+
+  // Save carry of previous cycle on output.
+  always_ff @(posedge i_ex_gck) begin
+    if (op_vld_q && ctr_q != 2'd3) begin
+      carry_q <= carry_d;
+    end
   end
 
 endmodule

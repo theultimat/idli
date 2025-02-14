@@ -288,4 +288,26 @@ module idli_decode_m import idli_pkg::*; (
     endcase
   end
 
+  // Carry in is set for SUB and INC. Make sure preserve in states following
+  // the set, and clear on all others.
+  always_comb begin
+    case (state_q)
+      STATE_ADD_SUB:        op_d.alu_cin = i_dcd_enc[3];
+      STATE_INC_URX_1:      op_d.alu_cin = i_dcd_enc[0];
+      STATE_ABC, STATE_BC:  op_d.alu_cin = op_q.alu_cin;
+      default:              op_d.alu_cin = '0;
+    endcase
+  end
+
+  // Invert RHS is set for ANDN and SUB, preserving and clearing where
+  // appropriate.
+  always_comb begin
+    case (state_q)
+      STATE_AND_ANDN:       op_d.alu_rhs_inv = i_dcd_enc[3];
+      STATE_ADD_SUB:        op_d.alu_rhs_inv = i_dcd_enc[3];
+      STATE_ABC, STATE_BC:  op_d.alu_rhs_inv = op_q.alu_rhs_inv;
+      default:              op_d.alu_rhs_inv = '0;
+    endcase
+  end
+
 endmodule
