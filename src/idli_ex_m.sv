@@ -49,7 +49,6 @@ module idli_ex_m import idli_pkg::*; (
 
     .i_alu_op       (op_q.alu_op),
     .i_alu_rhs_inv  ('0), // TODO
-    .i_alu_ctr      (ctr_q),
 
     .i_alu_lhs      (b_data),
     .i_alu_rhs      (c_data),
