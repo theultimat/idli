@@ -7,11 +7,11 @@ module idli_regs_m import idli_pkg::*; (
   // Clock - no reset required.
   input  var logic  i_reg_gck,
 
-  // Two read ports provided, B and C.
-  input  var greg_t     i_reg_b,
-  output var sqi_data_t o_reg_b_data,
-  input  var greg_t     i_reg_c,
-  output var sqi_data_t o_reg_c_data
+  // Two read ports provided, LHS and RHS.
+  input  var greg_t     i_reg_lhs,
+  output var sqi_data_t o_reg_lhs_data,
+  input  var greg_t     i_reg_rhs,
+  output var sqi_data_t o_reg_rhs_data
 );
 
   // Actual register data.
@@ -19,21 +19,21 @@ module idli_regs_m import idli_pkg::*; (
 
   // Output data on each read port.
   always_comb begin
-    o_reg_b_data = 'x;
+    o_reg_lhs_data = 'x;
 
     for (int unsigned REG = 0; REG < 8; REG++) begin
-      if (i_reg_b == greg_t'(REG)) begin
-        o_reg_b_data = regs_q[REG][3:0];
+      if (i_reg_lhs == greg_t'(REG)) begin
+        o_reg_lhs_data = regs_q[REG][3:0];
       end
     end
   end
 
   always_comb begin
-    o_reg_c_data = 'x;
+    o_reg_rhs_data = 'x;
 
     for (int unsigned REG = 0; REG < 8; REG++) begin
-      if (i_reg_c == greg_t'(REG)) begin
-        o_reg_c_data = regs_q[REG][3:0];
+      if (i_reg_rhs == greg_t'(REG)) begin
+        o_reg_rhs_data = regs_q[REG][3:0];
       end
     end
   end

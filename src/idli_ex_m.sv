@@ -25,12 +25,12 @@ module idli_ex_m import idli_pkg::*; (
   logic op_vld_q;
 
   // Data read from the register file.
-  sqi_data_t  b_reg_data;
-  sqi_data_t  c_reg_data;
+  sqi_data_t  lhs_reg_data;
+  sqi_data_t  rhs_reg_data;
 
   // LHS and RHS of operations.
-  sqi_data_t  b_data;
-  sqi_data_t  c_data;
+  sqi_data_t  lhs_data;
+  sqi_data_t  rhs_data;
 
   // Saved carry to feed back on subsequent cycles.
   logic carry_q;
@@ -42,10 +42,10 @@ module idli_ex_m import idli_pkg::*; (
   idli_regs_m regs_u (
     .i_reg_gck    (i_ex_gck),
 
-    .i_reg_b      (op_q.b),
-    .o_reg_b_data (b_reg_data),
-    .i_reg_c      (op_q.c),
-    .o_reg_c_data (c_reg_data)
+    .i_reg_lhs      (op_q.b),
+    .o_reg_lhs_data (lhs_reg_data),
+    .i_reg_rhs      (op_q.c),
+    .o_reg_rhs_data (rhs_reg_data)
   );
 
   // ALU.
@@ -55,8 +55,8 @@ module idli_ex_m import idli_pkg::*; (
     .i_alu_op       (op_q.alu_op),
     .i_alu_rhs_inv  (op_q.alu_rhs_inv),
 
-    .i_alu_lhs      (b_data),
-    .i_alu_rhs      (c_data),
+    .i_alu_lhs      (lhs_data),
+    .i_alu_rhs      (rhs_data),
     .i_alu_cin      (alu_cin),
 
     // verilator lint_off PINCONNECTEMPTY
@@ -93,19 +93,19 @@ module idli_ex_m import idli_pkg::*; (
   // Determine what the value for operands should be based on the routing
   // information decoded from the instruction.
   always_comb begin
-    case (op_q.b_src)
-      B_SRC_REG:  b_data = b_reg_data;
-      B_SRC_ZERO: b_data = '0;
-      B_SRC_PC:   b_data = '0;            // TODO PC not implemented yet.
-      default:    b_data = sqi_data_t'('x);
+    case (op_q.lhs_src)
+      LHS_SRC_REG:  lhs_data = lhs_reg_data;
+      LHS_SRC_ZERO: lhs_data = '0;
+      LHS_SRC_PC:   lhs_data = '0;            // TODO PC not implemented yet.
+      default:      lhs_data = sqi_data_t'('x);
     endcase
   end
 
   always_comb begin
-    case (op_q.c_src)
-      C_SRC_REG:  c_data = c_reg_data;
-      C_SRC_IMM:  c_data = i_ex_imm;
-      default:    c_data = sqi_data_t'('x);
+    case (op_q.rhs_src)
+      RHS_SRC_REG:  rhs_data = rhs_reg_data;
+      RHS_SRC_IMM:  rhs_data = i_ex_imm;
+      default:      rhs_data = sqi_data_t'('x);
     endcase
   end
 

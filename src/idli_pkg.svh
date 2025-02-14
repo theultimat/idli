@@ -30,18 +30,18 @@ typedef enum logic [1:0] {
   ALU_OP_XOR
 } alu_op_t;
 
-// Possible source locations for operand B.
+// Possible source locations for LHS operand.
 typedef enum logic [1:0] {
-  B_SRC_REG,
-  B_SRC_ZERO,
-  B_SRC_PC
-} b_src_t;
+  LHS_SRC_REG,
+  LHS_SRC_ZERO,
+  LHS_SRC_PC
+} lhs_src_t;
 
-// Possible source locations for operand C.
+// Possible source locations for RHS operand.
 typedef enum logic {
-  C_SRC_REG,
-  C_SRC_IMM
-} c_src_t;
+  RHS_SRC_REG,
+  RHS_SRC_IMM
+} rhs_src_t;
 
 // Decoded operation. Contains control signals for execution.
 typedef struct packed {
@@ -58,8 +58,8 @@ typedef struct packed {
   logic c_vld;
 
   // Where to take source operands from.
-  b_src_t b_src;
-  c_src_t c_src;
+  lhs_src_t lhs_src;
+  rhs_src_t rhs_src;
 
   // ALU control signals.
   alu_op_t alu_op;

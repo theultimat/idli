@@ -265,17 +265,17 @@ module idli_decode_m import idli_pkg::*; (
   // these can just be thrown away in decode.
   always_comb o_dcd_op_vld = (cycle_q == 2'd3) && state_q != STATE_NOP_1;
 
-  // Determine where to take operand B from.
+  // Determine where to take LHS from.
   always_comb begin
     case (state_q)
-      STATE_ABC:    op_d.b_src = B_SRC_REG;
-      STATE_MOV_PC: op_d.b_src = i_dcd_enc[0] ? B_SRC_PC : B_SRC_ZERO;
-      default:      op_d.b_src = op_q.b_src;
+      STATE_ABC:    op_d.lhs_src = LHS_SRC_REG;
+      STATE_MOV_PC: op_d.lhs_src = i_dcd_enc[0] ? LHS_SRC_PC : LHS_SRC_ZERO;
+      default:      op_d.lhs_src = op_q.lhs_src;
     endcase
   end
 
   // C is always read from the register unless it's the immediate.
-  always_comb op_d.c_src = &i_dcd_enc[2:0] ? C_SRC_IMM : C_SRC_REG;
+  always_comb op_d.rhs_src = &i_dcd_enc[2:0] ? RHS_SRC_IMM : RHS_SRC_REG;
 
   // Determine the ALU operation to execute.
   always_comb begin
