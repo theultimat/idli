@@ -28,6 +28,11 @@ module idli_ex_m import idli_pkg::*; (
   sqi_data_t  lhs_reg_data;
   sqi_data_t  rhs_reg_data;
 
+  // Write signals for register file.
+  greg_t      wr_reg;
+  logic       wr_reg_en;
+  sqi_data_t  wr_reg_data;
+
   // LHS and RHS of operations.
   sqi_data_t  lhs_data;
   sqi_data_t  rhs_data;
@@ -37,15 +42,22 @@ module idli_ex_m import idli_pkg::*; (
   logic carry_d;
   logic alu_cin;
 
+  // ALU output.
+  sqi_data_t alu_out;
+
 
   // General purpose register file.
   idli_regs_m regs_u (
-    .i_reg_gck    (i_ex_gck),
+    .i_reg_gck      (i_ex_gck),
 
     .i_reg_lhs      (op_q.b),
     .o_reg_lhs_data (lhs_reg_data),
     .i_reg_rhs      (op_q.c),
-    .o_reg_rhs_data (rhs_reg_data)
+    .o_reg_rhs_data (rhs_reg_data),
+
+    .i_reg_wr       (wr_reg),
+    .i_reg_wr_en    (wr_reg_en),
+    .i_reg_wr_data  (wr_reg_data)
   );
 
   // ALU.
@@ -59,9 +71,7 @@ module idli_ex_m import idli_pkg::*; (
     .i_alu_rhs      (rhs_data),
     .i_alu_cin      (alu_cin),
 
-    // verilator lint_off PINCONNECTEMPTY
-    .o_alu_data     (),
-    // verilator lint_on PINCONNECTEMPTY
+    .o_alu_data     (alu_out),
     .o_alu_cout     (carry_d)
   );
 
@@ -119,5 +129,10 @@ module idli_ex_m import idli_pkg::*; (
       carry_q <= carry_d;
     end
   end
+
+  // For now always write from the ALU if operand A is valid.
+  always_comb wr_reg      = op_q.a;
+  always_comb wr_reg_en   = op_vld_q && op_q.a_vld;
+  always_comb wr_reg_data = alu_out;
 
 endmodule

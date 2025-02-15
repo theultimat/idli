@@ -11,7 +11,12 @@ module idli_regs_m import idli_pkg::*; (
   input  var greg_t     i_reg_lhs,
   output var sqi_data_t o_reg_lhs_data,
   input  var greg_t     i_reg_rhs,
-  output var sqi_data_t o_reg_rhs_data
+  output var sqi_data_t o_reg_rhs_data,
+
+  // Single write port.
+  input  var greg_t     i_reg_wr,
+  input  var logic      i_reg_wr_en,
+  input  var sqi_data_t i_reg_wr_data
 );
 
   // Actual register data.
@@ -41,8 +46,20 @@ module idli_regs_m import idli_pkg::*; (
   // Rotate registers on each cycle.
   // TODO Handle incoming write data.
   for (genvar REG = 0; REG < 8; REG++) begin : num_regs_b
+    sqi_data_t reg_d;
+
+    // Data to rotate in is the old value or the incoming data if we're
+    // currently writing to this register.
+    always_comb begin
+      reg_d = sqi_data_t'(regs_q[REG][3:0]);
+
+      if (i_reg_wr_en && i_reg_wr == greg_t'(REG)) begin
+        reg_d = i_reg_wr_data;
+      end
+    end
+
     always_ff @(posedge i_reg_gck) begin
-      regs_q[REG] <= {regs_q[REG][3:0], regs_q[REG][15:4]};
+      regs_q[REG] <= {reg_d, regs_q[REG][15:4]};
     end
   end : num_regs_b
 
