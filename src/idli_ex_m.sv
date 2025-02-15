@@ -45,6 +45,14 @@ module idli_ex_m import idli_pkg::*; (
   // ALU output.
   sqi_data_t alu_out;
 
+`ifdef idli_debug_signals_d
+
+  // These signals are used in the test bench for debug and synchronising with
+  // the behavioural model.
+  logic instr_done;
+
+`endif // idli_debug_signals_d
+
 
   // General purpose register file.
   idli_regs_m regs_u (
@@ -134,5 +142,12 @@ module idli_ex_m import idli_pkg::*; (
   always_comb wr_reg      = op_q.a;
   always_comb wr_reg_en   = op_vld_q && op_q.a_vld;
   always_comb wr_reg_data = alu_out;
+
+
+`ifdef idli_debug_signals_d
+
+  always_comb instr_done = op_vld_q && ctr_q == 2'd3;
+
+`endif // idli_debug_signals_d
 
 endmodule

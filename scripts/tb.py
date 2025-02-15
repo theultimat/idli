@@ -112,12 +112,27 @@ class TestBench:
 
             # TODO Check stores
 
+    # Wait for instructions to complete in RTL then run on the behavioural
+    # model to compare.
+    async def _check_instr(self):
+        instr_done = self.dut.ex_instr_done
+
+        while True:
+            await RisingEdge(self.dut.gck)
+
+            if not instr_done.value:
+                continue
+
+            self.log('INSTR DONE')
+
     # Main simulation function.
     async def run(self):
         cocotb.start_soon(Clock(self.dut.gck, 2, units='ns').start())
 
         for i, mem in enumerate(self.mem):
             cocotb.start_soon(self._check_sqi(i, mem))
+
+        cocotb.start_soon(self._check_instr())
 
         self.log('BENCH: RESET BEGIN')
 

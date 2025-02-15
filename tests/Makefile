@@ -12,7 +12,7 @@ SOURCE_NAMES := $(basename $(notdir $(wildcard $(SV_ROOT)/*.sv)))
 BENCH_NAME   := idli_tb_m
 
 # Handle simulator specific details.
-COMPILE_ARGS := -I$(SV_ROOT)
+COMPILE_ARGS := -I$(SV_ROOT) +define+idli_debug_signals_d
 EXTRA_ARGS   :=
 PLUSARGS     :=
 
