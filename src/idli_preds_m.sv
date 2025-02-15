@@ -38,8 +38,10 @@ module idli_preds_m import idli_pkg::*; (
     end
   end
 
-  // Bypass if we're currently writing the register being read.
-  always_comb bypass = i_pred_wr_en && i_pred_wr == i_pred_rd;
+  // Bypass if we're currently writing the register being read and it isn't
+  // P3.
+  always_comb bypass = i_pred_wr_en && i_pred_wr == i_pred_rd
+                                    && i_pred_wr != PREG_PT;
 
   // Write register with new value on edge.
   for (genvar REG = 0; REG < 3; REG++) begin : num_regs_b
