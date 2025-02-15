@@ -22,7 +22,8 @@ module idli_tb_m import idli_pkg::*; ();
 `ifdef idli_debug_signals_d
 
   // Internal debug signals.
-  logic ex_instr_done;
+  logic        ex_instr_done;
+  logic [15:0] ex_gregs [8];
 
 `endif // idli_debug_signals_d
 
@@ -43,6 +44,12 @@ module idli_tb_m import idli_pkg::*; ();
 
   // Probe signals within the core.
   always_comb ex_instr_done = idli_u.ex_u.instr_done;
+
+  for (genvar REG = 0; REG < 8; REG++) begin : num_gregs_b
+    // Take the value that will be flopped on the following cycle so it
+    // matches the behavioural model on the edge the instruction completes.
+    always_comb ex_gregs[REG] = idli_u.ex_u.regs_u.num_regs_b[REG].reg_d;
+  end : num_gregs_b
 
 `endif // idli_debug_signals_d
 

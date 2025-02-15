@@ -46,20 +46,20 @@ module idli_regs_m import idli_pkg::*; (
   // Rotate registers on each cycle.
   // TODO Handle incoming write data.
   for (genvar REG = 0; REG < 8; REG++) begin : num_regs_b
-    sqi_data_t reg_d;
+    logic [15:0] reg_d;
 
     // Data to rotate in is the old value or the incoming data if we're
     // currently writing to this register.
     always_comb begin
-      reg_d = sqi_data_t'(regs_q[REG][3:0]);
+      reg_d = {regs_q[REG][3:0], regs_q[REG][15:4]};
 
       if (i_reg_wr_en && i_reg_wr == greg_t'(REG)) begin
-        reg_d = i_reg_wr_data;
+        reg_d[3:0] = i_reg_wr_data;
       end
     end
 
     always_ff @(posedge i_reg_gck) begin
-      regs_q[REG] <= {reg_d, regs_q[REG][15:4]};
+      regs_q[REG] <= reg_d;
     end
   end : num_regs_b
 

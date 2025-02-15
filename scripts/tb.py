@@ -16,7 +16,7 @@ class TestBenchCallback(sim.IdliCallback):
         self.uart_out = uart_out
 
     def write_greg(self, reg, value):
-        raise NotImplementedError()
+        self.tb.check_greg_write(reg, value)
 
     def write_preg(self, reg, value):
         raise NotImplementedError()
@@ -123,7 +123,22 @@ class TestBench:
             if not instr_done.value:
                 continue
 
-            self.log('INSTR DONE')
+            # Log the instruction that we think just executed.
+            instr, _ = self.sim.next_instr()
+            self.log(f'RUN: pc=0x{self.sim.pc:04x} instr={instr}')
+
+            # Run the behavioural model to fire the callbacks that perform the
+            # checks.
+            self.sim.tick()
+
+    # Check a GREG write was correct by comparing the value the sim has just
+    # written with what's now in the RTL.
+    def check_greg_write(self, reg, value):
+        sim = value
+        rtl = self.dut.ex_gregs[reg].value.integer
+
+        self.log(f'GREG: r{reg} sim=0x{sim:04x} rtl=0x{rtl:04x}')
+        assert sim == rtl
 
     # Main simulation function.
     async def run(self):
@@ -147,7 +162,7 @@ class TestBench:
         self.log('BENCH: RESET COMPLETE')
 
         # TODO Run until test completion - for now just run for a few cycles.
-        await ClockCycles(self.dut.gck, 40)
+        await ClockCycles(self.dut.gck, 80)
 
 
 # Load UART values for test input or output. These files are formatted as a

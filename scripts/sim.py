@@ -136,8 +136,7 @@ class Idli:
     # Perform one "tick". This is equivalent to running a single instruction.
     def tick(self):
         # Fetch and decode the next instruction at the current PC.
-        next_pc = (self.pc + 1) & 0xffff
-        instr = isa.Instruction.from_bytes(self.mem[self.pc], self.mem[next_pc])
+        instr, next_pc = self.next_instr()
 
         if self.trace:
             print(f'RUN     0x{self.pc:04x}    {instr}')
@@ -572,6 +571,13 @@ class Idli:
     # Swap the endianness of the 16b value.
     def _swap_endian(self, value):
         return ((value & 0xff) << 8) | ((value >> 8) & 0xff)
+
+    # Get the instruction at the current PC.
+    def next_instr(self):
+        next_pc = (self.pc + 1) & 0xffff
+        instr = isa.Instruction.from_bytes(self.mem[self.pc], self.mem[next_pc])
+
+        return instr, next_pc
 
 
 # Parse command line arguments if running in standalone mode.
