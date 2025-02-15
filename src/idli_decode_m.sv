@@ -257,6 +257,19 @@ module idli_decode_m import idli_pkg::*; (
     end
   end
 
+  // Q is known to be valid on cycle two of decode.
+  always_comb begin
+    op_d.q_vld = op_q.q_vld;
+
+    if (cycle_q == 2'd1) begin
+      case (state_q)
+        STATE_EQ_LT,
+        STATE_GE_PUTP_CMPZ: op_d.q_vld = '1;
+        default:            op_d.q_vld = '0;
+      endcase
+    end
+  end
+
   // Output the _d of the decoded op so it can be flopped immediately in
   // execute.
   always_comb o_dcd_op = op_d;

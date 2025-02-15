@@ -45,6 +45,12 @@ module idli_ex_m import idli_pkg::*; (
   // ALU output.
   sqi_data_t alu_out;
 
+  // Predicate register file signals.
+  preg_t  wr_pred;
+  logic   wr_pred_en;
+  logic   wr_pred_data;
+  logic   rd_pred_data;
+
 `ifdef idli_debug_signals_d
 
   // These signals are used in the test bench for debug and synchronising with
@@ -66,6 +72,18 @@ module idli_ex_m import idli_pkg::*; (
     .i_reg_wr       (wr_reg),
     .i_reg_wr_en    (wr_reg_en),
     .i_reg_wr_data  (wr_reg_data)
+  );
+
+  // Predicate register file.
+  idli_preds_m preds_u (
+    .i_pred_gck     (i_ex_gck),
+
+    .i_pred_rd      (op_q.p),
+    .o_pred_rd_data (rd_pred_data),
+
+    .i_pred_wr      (wr_pred),
+    .i_pred_wr_en   (wr_pred_en),
+    .i_pred_wr_data (wr_pred_data)
   );
 
   // ALU.
@@ -142,6 +160,11 @@ module idli_ex_m import idli_pkg::*; (
   always_comb wr_reg      = op_q.a;
   always_comb wr_reg_en   = op_vld_q && op_q.a_vld;
   always_comb wr_reg_data = alu_out;
+
+  // For now always write zero into the predicate register if Q is valid.
+  always_comb wr_pred       = op_q.q;
+  always_comb wr_pred_en    = op_vld_q && op_q.q_vld;
+  always_comb wr_pred_data  = '0; // TODO
 
 
 `ifdef idli_debug_signals_d

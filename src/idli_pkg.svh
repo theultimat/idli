@@ -53,6 +53,7 @@ typedef struct packed {
   greg_t  c;
 
   // Whether operand values are valid, excluding P which is always valid.
+  logic q_vld;
   logic a_vld;
   logic b_vld;
   logic c_vld;
