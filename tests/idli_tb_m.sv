@@ -24,6 +24,7 @@ module idli_tb_m import idli_pkg::*; ();
   // Internal debug signals.
   logic        ex_instr_done;
   logic [15:0] ex_gregs [8];
+  logic        ex_pregs [4];
 
 `endif // idli_debug_signals_d
 
@@ -50,6 +51,13 @@ module idli_tb_m import idli_pkg::*; ();
     // matches the behavioural model on the edge the instruction completes.
     always_comb ex_gregs[REG] = idli_u.ex_u.regs_u.num_regs_b[REG].reg_d;
   end : num_gregs_b
+
+  for (genvar REG = 0; REG < 3; REG++) begin : num_pregs_b
+    always_comb ex_pregs[REG] = idli_u.ex_u.preds_u.num_regs_b[REG].reg_d;
+  end : num_pregs_b
+
+  // P3 is always true and doesn't exist in core so force it here.
+  always_comb ex_pregs[3] = '1;
 
 `endif // idli_debug_signals_d
 

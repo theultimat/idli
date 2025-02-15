@@ -19,7 +19,7 @@ class TestBenchCallback(sim.IdliCallback):
         self.tb.check_greg_write(reg, value)
 
     def write_preg(self, reg, value):
-        raise NotImplementedError()
+        self.tb.check_preg_write(reg, value)
 
     def read_uart(self, width):
         fmt = f'<{"BH"[width - 1]}'
@@ -117,6 +117,8 @@ class TestBench:
     async def _check_instr(self):
         instr_done = self.dut.ex_instr_done
 
+        await RisingEdge(self.dut.rst_n)
+
         while True:
             await RisingEdge(self.dut.gck)
 
@@ -138,6 +140,14 @@ class TestBench:
         rtl = self.dut.ex_gregs[reg].value.integer
 
         self.log(f'GREG: r{reg} sim=0x{sim:04x} rtl=0x{rtl:04x}')
+        assert sim == rtl
+
+    # Check a PREG write is the correct value.
+    def check_preg_write(self, reg, value):
+        sim = int(value)
+        rtl = (self.dut.ex_pregs.value.integer >> reg) & 1
+
+        self.log(f'PREG: p{reg} sim=0x{sim} rtl=0x{rtl}')
         assert sim == rtl
 
     # Main simulation function.
