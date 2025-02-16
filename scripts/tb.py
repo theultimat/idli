@@ -112,6 +112,14 @@ class TestBench:
 
             # TODO Check stores
 
+    # Check PC matches.
+    def _check_pc(self):
+        sim = self.sim.pc
+        rtl = self.dut.ex_pc.value.integer
+
+        self.log(f'PC: sim=0x{sim:04x} rtl=0x{rtl:04x}')
+        assert sim == rtl
+
     # Wait for instructions to complete in RTL then run on the behavioural
     # model to compare.
     async def _check_instr(self):
@@ -124,6 +132,9 @@ class TestBench:
 
             if not instr_done.value:
                 continue
+
+            # Check PC is correct.
+            self._check_pc()
 
             # Log the instruction that we think just executed.
             instr, _ = self.sim.next_instr()
@@ -172,7 +183,7 @@ class TestBench:
         self.log('BENCH: RESET COMPLETE')
 
         # TODO Run until test completion - for now just run for a few cycles.
-        await ClockCycles(self.dut.gck, 80)
+        await ClockCycles(self.dut.gck, 100)
 
 
 # Load UART values for test input or output. These files are formatted as a

@@ -25,6 +25,9 @@ module idli_tb_m import idli_pkg::*; ();
   logic        ex_instr_done;
   logic [15:0] ex_gregs [8];
   logic        ex_pregs [4];
+  logic [15:0] ex_pc_q;
+  logic [15:0] ex_pc_d;
+  logic [15:0] ex_pc;
 
 `endif // idli_debug_signals_d
 
@@ -58,6 +61,15 @@ module idli_tb_m import idli_pkg::*; ();
 
   // P3 is always true and doesn't exist in core so force it here.
   always_comb ex_pregs[3] = '1;
+
+  // Rotate in the PC being fed into the execution units. To account for the
+  // pipeline we subtract one from the PC when presenting it to the bench.
+  always_comb ex_pc_d = {idli_u.ex_u.i_ex_pc, ex_pc_q[15:4]};
+  always_comb ex_pc   = ex_pc_d - 16'd1;
+
+  always_ff @(posedge gck) begin
+    ex_pc_q <= ex_pc_d;
+  end
 
 `endif // idli_debug_signals_d
 
