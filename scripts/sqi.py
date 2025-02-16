@@ -143,7 +143,7 @@ class SQIMemory:
 
         if self.state[-1] == '0':
             if self.verbose:
-                self.log(f'SQI read 0x{self.addr}: 0x{value:02x}')
+                self.log(f'SQI read 0x{self.addr:04x}: 0x{value:02x}')
 
             value = (value >> 4) & 0xf
         else:
