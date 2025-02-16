@@ -11,7 +11,8 @@ module idli_pc_m import idli_pkg::*; (
   input  var logic  i_pc_inc,
 
   // Current slice of the PC for use in execute.
-  output var sqi_data_t o_pc
+  output var sqi_data_t o_pc,
+  output var sqi_data_t o_pc_next
 );
 
   // Current and next PC.
@@ -64,6 +65,7 @@ module idli_pc_m import idli_pkg::*; (
   end
 
   // Output the current slice of the PC.
-  always_comb o_pc = sqi_data_t'(pc_q[3:0]);
+  always_comb o_pc      = sqi_data_t'(pc_q[3:0]);
+  always_comb o_pc_next = pc_d;
 
 endmodule

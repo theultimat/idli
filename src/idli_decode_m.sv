@@ -353,4 +353,13 @@ module idli_decode_m import idli_pkg::*; (
     endcase
   end
 
+  // Branch/jump with link directly write the next PC into the LR.
+  always_comb begin
+    case (state_q)
+      STATE_BP_JP_UTX:  op_d.wr_lr = ~i_dcd_enc[3] & i_dcd_enc[1];
+      STATE_C:          op_d.wr_lr = op_q.wr_lr;
+      default:          op_d.wr_lr = '0;
+    endcase
+  end
+
 endmodule

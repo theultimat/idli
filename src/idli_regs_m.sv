@@ -54,7 +54,7 @@ module idli_regs_m import idli_pkg::*; (
       reg_d = {regs_q[REG][3:0], regs_q[REG][15:4]};
 
       if (i_reg_wr_en && i_reg_wr == greg_t'(REG)) begin
-        reg_d[3:0] = i_reg_wr_data;
+        reg_d[15:12] = i_reg_wr_data;
       end
     end
 

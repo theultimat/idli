@@ -21,6 +21,7 @@ module idli_top_m import idli_pkg::*; (
   logic dcd_op_vld;
 
   sqi_data_t pc;
+  sqi_data_t pc_next;
 
   idli_sqi_m sqi_u (
     .i_sqi_gck      (i_top_gck),
@@ -59,7 +60,8 @@ module idli_top_m import idli_pkg::*; (
 
     .i_ex_imm     (sqi_rd_data),
 
-    .i_ex_pc      (pc)
+    .i_ex_pc      (pc),
+    .i_ex_pc_next (pc_next)
   );
 
   idli_pc_m pc_u (
@@ -68,7 +70,8 @@ module idli_top_m import idli_pkg::*; (
 
     .i_pc_inc   (sqi_rd_data_vld),
 
-    .o_pc       (pc)
+    .o_pc       (pc),
+    .o_pc_next  (pc_next)
   );
 
 endmodule

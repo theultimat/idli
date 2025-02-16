@@ -15,8 +15,9 @@ module idli_ex_m import idli_pkg::*; (
   // Immedaite data read from the memory.
   input  var sqi_data_t i_ex_imm,
 
-  // Program counter of the instruction currently in decode.
-  input  var sqi_data_t i_ex_pc
+  // Current and next PC of the instruction in decode.
+  input  var sqi_data_t i_ex_pc,
+  input  var sqi_data_t i_ex_pc_next
 );
 
   // Track progress through the instruction using a 2b counter. We process 16b
@@ -159,10 +160,11 @@ module idli_ex_m import idli_pkg::*; (
     end
   end
 
-  // For now always write from the ALU if operand A is valid.
-  always_comb wr_reg      = op_q.a;
-  always_comb wr_reg_en   = op_vld_q && op_q.a_vld;
-  always_comb wr_reg_data = alu_out;
+  // Write the output of the ALU into A if it's valid, but override with the
+  // next PC if LR should be written instead.
+  always_comb wr_reg      = op_q.wr_lr ? GREG_LR : op_q.a;
+  always_comb wr_reg_en   = op_vld_q && (op_q.a_vld || op_q.wr_lr);
+  always_comb wr_reg_data = op_q.wr_lr ? i_ex_pc_next : alu_out;
 
   // For now always write zero into the predicate register if Q is valid.
   always_comb wr_pred       = op_q.q;
