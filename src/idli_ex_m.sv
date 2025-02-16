@@ -13,7 +13,10 @@ module idli_ex_m import idli_pkg::*; (
   output var logic  o_ex_op_acp,
 
   // Immedaite data read from the memory.
-  input  var sqi_data_t i_ex_imm
+  input  var sqi_data_t i_ex_imm,
+
+  // Program counter of the instruction currently in decode.
+  input  var sqi_data_t i_ex_pc
 );
 
   // Track progress through the instruction using a 2b counter. We process 16b
