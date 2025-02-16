@@ -22,6 +22,9 @@ typedef logic [1:0] preg_t;
 // Identifier for the always true predicate register.
 localparam preg_t PREG_PT = preg_t'(2'd3);
 
+// Identifier for the link register i.e. R6.
+localparam greg_t GREG_LR = greg_t'(3'd6);
+
 // Supported ALU operations.
 typedef enum logic [1:0] {
   ALU_OP_ADD,
