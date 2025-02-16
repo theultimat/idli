@@ -209,14 +209,7 @@ module idli_decode_m import idli_pkg::*; (
     op_d.c = op_q.c;
 
     if (cycle_q == 2'd1) begin
-        // Normally the top bit of A is taken straight from the instruction,
-        // but if we might be a branch with link we override the value with
-        // the top bit of LR.
-        if (state_q == STATE_MOV_PC_BP_JP_UTX && i_dcd_enc[3]) begin
-          op_d.a[2] = GREG_LR[2];
-        end else begin
-          op_d.a[2] = i_dcd_enc[0];
-        end
+        op_d.a[2] = i_dcd_enc[0];
 
         // Special case here for P - all instructions except NOP and branch
         // and compare on register are predicated, with these two special
@@ -228,11 +221,8 @@ module idli_decode_m import idli_pkg::*; (
         end
     end else if (cycle_q == 2'd2) begin
         op_d.q      = preg_t'(i_dcd_enc[3:2]);
+        op_d.a[1:0] = i_dcd_enc[3:2];
         op_d.b[2:1] = i_dcd_enc[1:0];
-
-        // Write the rest of the link register in for branches.
-        op_d.a[1:0] = (state_q == STATE_BP_JP_UTX) ? GREG_LR[1:0]
-                                                   : i_dcd_enc[3:2];
     end else if (cycle_q == 2'd3) begin
         op_d.b[0] = i_dcd_enc[3];
         op_d.c    = greg_t'(i_dcd_enc[2:0]);
@@ -247,9 +237,7 @@ module idli_decode_m import idli_pkg::*; (
     end
   end
 
-  // Operand A is always known to be valid on decode cycle two. We need to
-  // check for branch with link specifically to overwrite the valid so LR is
-  // correctly updated.
+  // Operand A is always known to be valid on decode cycle two.
   always_comb begin
     op_d.a_vld = op_q.a_vld;
 
@@ -257,9 +245,8 @@ module idli_decode_m import idli_pkg::*; (
       op_d.a_vld = state_q == STATE_ABC
                 || state_q == STATE_STACK_PERM_INV_0
                 || state_q == STATE_INC_URX_0
-                || state_q == STATE_MOV_PC
-                || (state_q == STATE_BP_JP_UTX && (i_dcd_enc[1] & ~i_dcd_enc[3]));
-    end
+                || state_q == STATE_MOV_PC;
+      end
   end
 
   // We can only be sure if B is valid on the final cycle of decode.
