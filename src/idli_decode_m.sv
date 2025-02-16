@@ -22,6 +22,7 @@ module idli_decode_m import idli_pkg::*; (
   typedef enum logic [5:0] {
     // First decode cycle.
     STATE_INIT                      = 6'b000000,
+    STATE_IMM_0                     = 6'b001111,
 
     // Second decode cycle.
     STATE_NOP_BZ                    = 6'b010000,
@@ -36,6 +37,7 @@ module idli_decode_m import idli_pkg::*; (
     STATE_AND_ANDN                  = 6'b011001,
     STATE_OR_XOR                    = 6'b011010,
     STATE_MOV_PC_BP_JP_UTX          = 6'b011011,
+    STATE_IMM_1                     = 6'b011111,
 
     // Third decode cyle.
     STATE_NOP_0                     = 6'b100000,
@@ -47,6 +49,7 @@ module idli_decode_m import idli_pkg::*; (
     STATE_INC_URX_0                 = 6'b100110,
     STATE_BP_JP_UTX                 = 6'b100111,
     STATE_MOV_PC                    = 6'b101000,
+    STATE_IMM_2                     = 6'b101111,
 
     // Final decode cycle.
     STATE_NOP_1                     = 6'b110000,
@@ -54,7 +57,8 @@ module idli_decode_m import idli_pkg::*; (
     STATE_C                         = 6'b110010,
     STATE_CMPZ_PUTP_1               = 6'b110011,
     STATE_STACK_PERM_INV_1          = 6'b110100,
-    STATE_INC_URX_1                 = 6'b110101
+    STATE_INC_URX_1                 = 6'b110101,
+    STATE_IMM_3                     = 6'b111111
   } state_t;
 
   // Current and next state for the decoder.
@@ -170,9 +174,22 @@ module idli_decode_m import idli_pkg::*; (
         // No more opcode bits, continue.
         state_d = STATE_INC_URX_1;
       end
+      STATE_IMM_0: begin
+        // Process next 4b of immediate.
+        state_d = STATE_IMM_1;
+      end
+      STATE_IMM_1: begin
+        // Process next 4b of immediate.
+        state_d = STATE_IMM_2;
+      end
+      STATE_IMM_2: begin
+        // Process next 4b of immediate.
+        state_d = STATE_IMM_3;
+      end
       default: begin
-        // All states return back to the start for the next instruction.
-        state_d = STATE_INIT;
+        // All states return back to the start for the next instruction,
+        // unless the instruction takes an immediate.
+        state_d = (op_d.rhs_src == RHS_SRC_IMM) ? STATE_IMM_0 : STATE_INIT;
       end
     endcase
   end
@@ -275,8 +292,10 @@ module idli_decode_m import idli_pkg::*; (
   always_comb o_dcd_op = op_d;
 
   // Instruction is valid if we're in a final state, unless it's a NOP as
-  // these can just be thrown away in decode.
-  always_comb o_dcd_op_vld = (cycle_q == 2'd3) && state_q != STATE_NOP_1;
+  // these can just be thrown away in decode. Immediate data is also marked as
+  // invalid.
+  always_comb o_dcd_op_vld = cycle_q == 2'd3 && state_q != STATE_NOP_1
+                                             && state_q != STATE_IMM_3;
 
   // Determine where to take LHS from.
   always_comb begin
