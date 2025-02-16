@@ -66,6 +66,9 @@ typedef struct packed {
   alu_op_t alu_op;
   logic    alu_cin;
   logic    alu_rhs_inv;
+
+  // Whether PC is written by the instruction.
+  logic   wr_pc;
 } op_t;
 
 endpackage

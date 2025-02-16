@@ -342,4 +342,15 @@ module idli_decode_m import idli_pkg::*; (
     endcase
   end
 
+  // All branch instructions write the PC. These can be branch if register
+  // zero, branch on predicate, or jump on predicate.
+  always_comb begin
+    case (state_q)
+      STATE_BZ:           op_d.wr_pc = '1;
+      STATE_BP_JP_UTX:    op_d.wr_pc = ~i_dcd_enc[3];
+      STATE_BC, STATE_C:  op_d.wr_pc = op_q.wr_pc;
+      default:            op_d.wr_pc = '0;
+    endcase
+  end
+
 endmodule
