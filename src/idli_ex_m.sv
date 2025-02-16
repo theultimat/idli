@@ -27,6 +27,7 @@ module idli_ex_m import idli_pkg::*; (
   // Flopped value of the instruction to execute.
   op_t  op_q;
   logic op_vld_q;
+  logic op_vld_d;
 
   // Data read from the register file.
   sqi_data_t  lhs_reg_data;
@@ -82,7 +83,7 @@ module idli_ex_m import idli_pkg::*; (
   idli_preds_m preds_u (
     .i_pred_gck     (i_ex_gck),
 
-    .i_pred_rd      (op_q.p),
+    .i_pred_rd      (i_ex_op.p),
     .o_pred_rd_data (rd_pred_data),
 
     .i_pred_wr      (wr_pred),
@@ -126,9 +127,14 @@ module idli_ex_m import idli_pkg::*; (
       op_vld_q <= '0;
     end else if (o_ex_op_acp) begin
       op_q     <= i_ex_op;
-      op_vld_q <= i_ex_op_vld;
+      op_vld_q <= op_vld_d;
     end
   end
+
+  // When we're accepting an instruction it's only going to be valid if the
+  // predicate is true - this is why we feed the incoming instruction's P into
+  // the register file rather than the flopped value.
+  always_comb op_vld_d = i_ex_op_vld && rd_pred_data;
 
   // Determine what the value for operands should be based on the routing
   // information decoded from the instruction.
