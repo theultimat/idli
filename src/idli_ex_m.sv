@@ -15,9 +15,14 @@ module idli_ex_m import idli_pkg::*; (
   // Immedaite data read from the memory.
   input  var sqi_data_t i_ex_imm,
 
-  // Current and next PC of the instruction in decode.
+  // Current and next PC of the instruction in decode and whether the
+  // instruction executing is redirecting the PC.
   input  var sqi_data_t i_ex_pc,
-  input  var sqi_data_t i_ex_pc_next
+  input  var sqi_data_t i_ex_pc_next,
+  output var logic      o_ex_redirect,
+
+  // ALU output for performing memory accesses and branches.
+  output var sqi_data_t o_ex_alu_out
 );
 
   // Track progress through the instruction using a 2b counter. We process 16b
@@ -134,7 +139,7 @@ module idli_ex_m import idli_pkg::*; (
   // When we're accepting an instruction it's only going to be valid if the
   // predicate is true - this is why we feed the incoming instruction's P into
   // the register file rather than the flopped value.
-  always_comb op_vld_d = i_ex_op_vld && rd_pred_data;
+  always_comb op_vld_d = i_ex_op_vld && rd_pred_data && !o_ex_redirect;
 
   // Determine what the value for operands should be based on the routing
   // information decoded from the instruction.
@@ -142,7 +147,7 @@ module idli_ex_m import idli_pkg::*; (
     case (op_q.lhs_src)
       LHS_SRC_REG:  lhs_data = lhs_reg_data;
       LHS_SRC_ZERO: lhs_data = '0;
-      LHS_SRC_PC:   lhs_data = '0;            // TODO PC not implemented yet.
+      LHS_SRC_PC:   lhs_data = i_ex_pc;
       default:      lhs_data = sqi_data_t'('x);
     endcase
   end
@@ -176,6 +181,12 @@ module idli_ex_m import idli_pkg::*; (
   always_comb wr_pred       = op_q.q;
   always_comb wr_pred_en    = op_vld_q && op_q.q_vld;
   always_comb wr_pred_data  = '0; // TODO
+
+  // Redirect if we're writing the PC.
+  always_comb o_ex_redirect = op_vld_q && op_q.wr_pc;
+
+  // Forward the ALU output.
+  always_comb o_ex_alu_out = alu_out;
 
 
 `ifdef idli_debug_signals_d

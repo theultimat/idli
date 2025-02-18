@@ -23,18 +23,24 @@ module idli_top_m import idli_pkg::*; (
   sqi_data_t pc;
   sqi_data_t pc_next;
 
+  logic       ex_redirect;
+  sqi_data_t  ex_alu_out;
+
   idli_sqi_m sqi_u (
-    .i_sqi_gck      (i_top_gck),
-    .i_sqi_rst_n    (i_top_rst_n),
+    .i_sqi_gck        (i_top_gck),
+    .i_sqi_rst_n      (i_top_rst_n),
 
-    .o_sqi_sck      (o_top_sck),
-    .o_sqi_cs       (o_top_cs),
+    .o_sqi_sck        (o_top_sck),
+    .o_sqi_cs         (o_top_cs),
 
-    .i_sqi_sio      (i_top_sio),
-    .o_sqi_sio      (o_top_sio),
+    .i_sqi_sio        (i_top_sio),
+    .o_sqi_sio        (o_top_sio),
 
-    .o_sqi_data     (sqi_rd_data),
-    .o_sqi_data_vld (sqi_rd_data_vld)
+    .o_sqi_data       (sqi_rd_data),
+    .o_sqi_data_vld   (sqi_rd_data_vld),
+
+    .i_sqi_addr_en    (ex_redirect),
+    .i_sqi_lifo_data  (ex_alu_out)
   );
 
   idli_decode_m decode_u (
@@ -49,19 +55,22 @@ module idli_top_m import idli_pkg::*; (
   );
 
   idli_ex_m ex_u (
-    .i_ex_gck     (i_top_gck),
-    .i_ex_rst_n   (i_top_rst_n),
+    .i_ex_gck       (i_top_gck),
+    .i_ex_rst_n     (i_top_rst_n),
 
-    .i_ex_op      (dcd_op),
-    .i_ex_op_vld  (dcd_op_vld),
+    .i_ex_op        (dcd_op),
+    .i_ex_op_vld    (dcd_op_vld),
     // verilator lint_off PINCONNECTEMPTY
-    .o_ex_op_acp  (),
+    .o_ex_op_acp    (),
     // verilator lint_on PINCONNECTEMPTY
 
-    .i_ex_imm     (sqi_rd_data),
+    .i_ex_imm       (sqi_rd_data),
 
-    .i_ex_pc      (pc),
-    .i_ex_pc_next (pc_next)
+    .i_ex_pc        (pc),
+    .i_ex_pc_next   (pc_next),
+    .o_ex_redirect  (ex_redirect),
+
+    .o_ex_alu_out   (ex_alu_out)
   );
 
   idli_pc_m pc_u (

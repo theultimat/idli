@@ -23,7 +23,11 @@ module idli_sqi_m import idli_pkg::*; #(
 
   // Interface to the rest of the core, presented 4b per cycle.
   output var sqi_data_t   o_sqi_data,
-  output var logic        o_sqi_data_vld
+  output var logic        o_sqi_data_vld,
+
+  // Write signals for the two LIFOs and incoming data.
+  input  var logic        i_sqi_addr_en,
+  input  var sqi_data_t   i_sqi_lifo_data
 );
 
   // Internal states for the controller. Read and write operations can
@@ -86,6 +90,10 @@ module idli_sqi_m import idli_pkg::*; #(
   // Output data from each of the buffers.
   sqi_data_t [SQI_BUF_NUM-1:0] buf_data_q;
 
+  // Output of the current slice of the address and when to pop.
+  sqi_data_t  addr_data;
+  logic       addr_pop;
+
   // We have two data buffers for accessing the memories. This enables for
   // pipelining, so we can write to one while reading from the other.
   for (genvar BUF = 0; BUF < SQI_BUF_NUM; BUF++) begin : num_buf_b
@@ -98,8 +106,45 @@ module idli_sqi_m import idli_pkg::*; #(
     );
   end : num_buf_b
 
+  // Buffers for transmitting the address and data for load/store and branch
+  // instructions.
+  idli_lifo_m #(
+    .RESET ('1)
+  ) lifo_addr_u (
+    .i_lifo_gck   (i_sqi_gck),
+    .i_lifo_rst_n (i_sqi_rst_n),
+
+    .i_lifo_push  (i_sqi_addr_en),
+    .i_lifo_pop   (addr_pop),
+    .i_lifo_data  (i_sqi_lifo_data),
+    .o_lifo_data  (addr_data),
+
+    // We don't need this signal for addresses so just leave it unconnected.
+    //
+    // verilator lint_off PINCONNECTEMPTY
+    .o_lifo_is_byte ()
+    // verilator lint_on PINCONNECTEMPTY
+  );
+
+  idli_lifo_m lifo_data_u (
+    .i_lifo_gck   (i_sqi_gck),
+    .i_lifo_rst_n (i_sqi_rst_n),
+
+    .i_lifo_push  ('0), // TODO
+    .i_lifo_pop   ('0), // TODO
+    .i_lifo_data  (i_sqi_lifo_data),
+    // verilator lint_off PINCONNECTEMPTY
+    .o_lifo_data  (),
+
+    .o_lifo_is_byte ()
+    // verilator lint_on PINCONNECTEMPTY
+  );
+
   // Calculate and save the next state. Each state only needs to be updated
   // every two GCK as SCK is is half the frequency.
+  //
+  // When we write an address into the LIFO we're going to be redirecting the
+  // SQI memory so this triggers a reset.
   always_comb begin
     case (state_q)
       STATE_RESET:    state_d = STATE_INSTR_0;
@@ -111,8 +156,8 @@ module idli_sqi_m import idli_pkg::*; #(
       STATE_ADDR_3:   state_d = STATE_DUMMY_0;  // TODO Assumes READ.
       STATE_DUMMY_0:  state_d = STATE_DUMMY_1;
       STATE_DUMMY_1:  state_d = STATE_DATA_0;
-      STATE_DATA_0:   state_d = STATE_DATA_1;
-      STATE_DATA_1:   state_d = STATE_DATA_0;   // TODO Assumes no new transaction.
+      STATE_DATA_0:   state_d = i_sqi_addr_en ? STATE_RESET : STATE_DATA_1;
+      STATE_DATA_1:   state_d = i_sqi_addr_en ? STATE_RESET : STATE_DATA_0;
       default:        state_d = state_q;        // TODO Should be unreachable.
     endcase
   end
@@ -148,10 +193,10 @@ module idli_sqi_m import idli_pkg::*; #(
     case (state_q)
       STATE_INSTR_0:  o_sqi_sio[0] = INSTR_READ[7:4]; // TODO Forced to READ
       STATE_INSTR_1:  o_sqi_sio[0] = INSTR_READ[3:0];
-      STATE_ADDR_0:   o_sqi_sio[0] = '0;              // TODO Forced to 0
-      STATE_ADDR_1:   o_sqi_sio[0] = '0;
-      STATE_ADDR_2:   o_sqi_sio[0] = '0;
-      STATE_ADDR_3:   o_sqi_sio[0] = '0;
+      STATE_ADDR_0:   o_sqi_sio[0] = addr_data;
+      STATE_ADDR_1:   o_sqi_sio[0] = addr_data;
+      STATE_ADDR_2:   o_sqi_sio[0] = addr_data;
+      STATE_ADDR_3:   o_sqi_sio[0] = addr_data;
       default:        o_sqi_sio[0] = 'x;
     endcase
   end
@@ -220,6 +265,17 @@ module idli_sqi_m import idli_pkg::*; #(
       endcase
       // verilator lint_on CASEINCOMPLETE
     end
+  end
+
+  // Pop address data when we're in an address state and SCK is high.
+  always_comb begin
+    case (state_q)
+      STATE_ADDR_0,
+      STATE_ADDR_1,
+      STATE_ADDR_2,
+      STATE_ADDR_3: addr_pop = o_sqi_sck[0];
+      default:      addr_pop = '0;
+    endcase
   end
 
 endmodule
