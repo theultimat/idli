@@ -50,9 +50,6 @@ class SQIMemory:
                 if self.verbose:
                     self.log('Resetting SQI memory.')
 
-                if self.state in ('read1', 'write1'):
-                    raise Exception(f'CS pulled low half way through a byte!')
-
                 self.addr = None
                 self.state = None
 
