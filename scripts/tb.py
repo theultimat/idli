@@ -183,7 +183,7 @@ class TestBench:
         self.log('BENCH: RESET COMPLETE')
 
         # TODO Run until test completion - for now just run for a few cycles.
-        await ClockCycles(self.dut.gck, 100)
+        await ClockCycles(self.dut.gck, 120)
 
 
 # Load UART values for test input or output. These files are formatted as a

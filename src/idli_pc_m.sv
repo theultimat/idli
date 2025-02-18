@@ -8,7 +8,9 @@ module idli_pc_m import idli_pkg::*; (
   input  var logic  i_pc_rst_n,
 
   // Update control signals.
-  input  var logic  i_pc_inc,
+  input  var logic      i_pc_inc,
+  input  var logic      i_pc_redirect,
+  input  var sqi_data_t i_pc_redirect_data,
 
   // Current slice of the PC for use in execute.
   output var sqi_data_t o_pc,
@@ -42,30 +44,34 @@ module idli_pc_m import idli_pkg::*; (
   always_ff @(posedge i_pc_gck, negedge i_pc_rst_n) begin
     if (!i_pc_rst_n) begin
       ctr_q <= '0;
-    end else if (i_pc_inc) begin
+    end else if (i_pc_inc || i_pc_redirect) begin
       ctr_q <= ctr_q + 2'd1;
     end
   end
 
-  // Compute the new PC. Incrementing is as simple as adding one each cycle,
-  // which can be done using the carry in only.
+  // Compute the next sequential PC and carry out, making sure to reset back
+  // to one if it's the final cycle or keep it high if we aren't currently
+  // incrementing.
   always_comb begin
-    pc_d    = sqi_data_t'(pc_q[3:0]);
-    carry_d = '1;
+    {carry_d, o_pc_next} = o_pc + sqi_data_t'(carry_q);
 
-    if (i_pc_inc) begin
-      {carry_d, pc_d} = pc_d + sqi_data_t'(carry_q);
-    end
-
-    // If this is the final cycle then the carry should be forced back to one
-    // for the next increment.
-    if (&ctr_q) begin
+    if (&ctr_q || !i_pc_inc) begin
       carry_d = '1;
     end
   end
 
+  // Select the next PC based on the current control signals. Highest priority
+  // is a redirect, in which case we take the incoming data. Next we increment
+  // if requested, otherwise we hold the original value.
+  always_comb begin
+    casez ({i_pc_redirect, i_pc_inc})
+      2'b1?:   pc_d = i_pc_redirect_data;
+      2'b01:   pc_d = o_pc_next;
+      default: pc_d = o_pc;
+    endcase
+  end
+
   // Output the current slice of the PC.
-  always_comb o_pc      = sqi_data_t'(pc_q[3:0]);
-  always_comb o_pc_next = pc_d;
+  always_comb o_pc = sqi_data_t'(pc_q[3:0]);
 
 endmodule

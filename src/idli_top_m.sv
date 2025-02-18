@@ -74,13 +74,15 @@ module idli_top_m import idli_pkg::*; (
   );
 
   idli_pc_m pc_u (
-    .i_pc_gck   (i_top_gck),
-    .i_pc_rst_n (i_top_rst_n),
+    .i_pc_gck           (i_top_gck),
+    .i_pc_rst_n         (i_top_rst_n),
 
-    .i_pc_inc   (sqi_rd_data_vld),
+    .i_pc_inc           (sqi_rd_data_vld),
+    .i_pc_redirect      (ex_redirect),
+    .i_pc_redirect_data (ex_alu_out),
 
-    .o_pc       (pc),
-    .o_pc_next  (pc_next)
+    .o_pc               (pc),
+    .o_pc_next          (pc_next)
   );
 
 endmodule
