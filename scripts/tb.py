@@ -6,6 +6,7 @@ from cocotb.triggers import RisingEdge, FallingEdge, ClockCycles
 
 import sim
 import sqi
+import uart
 
 
 # Simulator callback for use with the test bench (defined below).
@@ -31,7 +32,13 @@ class TestBenchCallback(sim.IdliCallback):
         return value
 
     def write_uart(self, value, width):
-        raise NotImplementedError()
+        lo = (value >> 0) & 0xff
+        hi = (value >> 8) & 0xff
+
+        self.tb.sim_uart_rx.append(lo)
+
+        if width > 1:
+            self.tb.sim_uart_rx.append(hi)
 
     def write_mem(self, addr, value):
         raise NotImplementedError()
@@ -57,6 +64,15 @@ class TestBench:
             sqi.SQIMemory(verbose=True, log=lambda x: self.log(f'SQI1: {x}')),
         ]
         self._backdoor_load(path)
+
+        self.sim_uart_rx = []
+        self.rtl_uart_rx = []
+
+        self.uart = uart.UART(
+            rx_cb=lambda x: self.rtl_uart_rx.append(x),
+            verbose=True,
+            log=lambda x: self.log(f'UART: {x}'),
+        )
 
         self.log('BENCH: INIT COMPLETE')
 
@@ -144,6 +160,27 @@ class TestBench:
             # checks.
             self.sim.tick()
 
+    # Check simulator and RTL UART match.
+    def _check_uart_data(self):
+        while self.sim_uart_rx and self.rtl_uart_rx:
+            sim = self.sim_uart_rx.pop(0)
+            rtl = self.rtl_uart_rx.pop(0)
+
+            self.log(f'UART: sim=0x{sim:02x} rtl=0x{rtl:02x}')
+            assert sim == rtl
+
+    # Check UART RX and transmit for TX.
+    async def _check_uart(self):
+        rx = self.dut.uart_tx
+
+        await RisingEdge(self.dut.rst_n)
+
+        while True:
+            await RisingEdge(self.dut.gck)
+
+            self.uart.rising_edge(rx.value.integer & 1)
+            self._check_uart_data()
+
     # Check a GREG write was correct by comparing the value the sim has just
     # written with what's now in the RTL.
     def check_greg_write(self, reg, value):
@@ -169,6 +206,7 @@ class TestBench:
             cocotb.start_soon(self._check_sqi(i, mem))
 
         cocotb.start_soon(self._check_instr())
+        cocotb.start_soon(self._check_uart())
 
         self.log('BENCH: RESET BEGIN')
 
@@ -184,6 +222,12 @@ class TestBench:
 
         # TODO Run until test completion - for now just run for a few cycles.
         await ClockCycles(self.dut.gck, 120)
+
+        self._check_uart_data()
+        if self.sim_uart_rx:
+            raise Exception(f'Outstanding sim UART: {self.sim_uart_rx}')
+        if self.rtl_uart_rx:
+            raise Exception(f'Outstanding RTL UART: {self.rtl_uart_rx}')
 
 
 # Load UART values for test input or output. These files are formatted as a

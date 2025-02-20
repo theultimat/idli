@@ -19,6 +19,8 @@ module idli_tb_m import idli_pkg::*; ();
   sqi_data_t sqi_sio_out_hi;
   sqi_data_t sqi_sio_out_lo;
 
+  logic uart_tx;
+
 `ifdef idli_debug_signals_d
 
   // Internal debug signals.
@@ -42,6 +44,9 @@ module idli_tb_m import idli_pkg::*; ();
     .i_top_sio    ({sqi_sio_in_hi, sqi_sio_in_lo}),
     .o_top_sio    ({sqi_sio_out_hi, sqi_sio_out_lo})
   );
+
+  // TODO Should be connected to the core, just tie off to idle for now.
+  always_comb uart_tx = '1;
 
 
 `ifdef idli_debug_signals_d
