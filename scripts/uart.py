@@ -1,6 +1,9 @@
 # UART transmitter and receiver for connecting to the RTL.
 class UART:
     def __init__(self, rx_cb, verbose=False, log=print):
+        self.verbose = verbose
+        self.log = log
+
         # Only support 8b data frames and a single stop bit.
         self.data_bits = 8
         self.stop_bits = 1
@@ -51,7 +54,7 @@ class UART:
                 self.rx_state = 'idle'
 
                 if self.verbose:
-                    self.log('UART RX data: 0x{data:02x}')
+                    self.log(f'UART RX data: 0x{data:02x}')
 
                 self.rx_cb(data)
         else:
