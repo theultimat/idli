@@ -36,17 +36,16 @@ module idli_tb_m import idli_pkg::*; ();
 
   // Instantiate the top-level core.
   idli_top_m idli_u (
-    .i_top_gck    (gck),
-    .i_top_rst_n  (rst_n),
+    .i_top_gck      (gck),
+    .i_top_rst_n    (rst_n),
 
-    .o_top_sck    ({sqi_sck_hi, sqi_sck_lo}),
-    .o_top_cs     ({sqi_cs_hi, sqi_cs_lo}),
-    .i_top_sio    ({sqi_sio_in_hi, sqi_sio_in_lo}),
-    .o_top_sio    ({sqi_sio_out_hi, sqi_sio_out_lo})
+    .o_top_sck      ({sqi_sck_hi, sqi_sck_lo}),
+    .o_top_cs       ({sqi_cs_hi, sqi_cs_lo}),
+    .i_top_sio      ({sqi_sio_in_hi, sqi_sio_in_lo}),
+    .o_top_sio      ({sqi_sio_out_hi, sqi_sio_out_lo}),
+
+    .o_top_uart_tx  (uart_tx)
   );
-
-  // TODO Should be connected to the core, just tie off to idle for now.
-  always_comb uart_tx = '1;
 
 
 `ifdef idli_debug_signals_d

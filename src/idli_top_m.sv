@@ -11,7 +11,11 @@ module idli_top_m import idli_pkg::*; (
   output var logic      [SQI_NUM-1:0] o_top_sck,
   output var logic      [SQI_NUM-1:0] o_top_cs,
   input  var sqi_data_t [SQI_NUM-1:0] i_top_sio,
-  output var sqi_data_t [SQI_NUM-1:0] o_top_sio
+  output var sqi_data_t [SQI_NUM-1:0] o_top_sio,
+
+  // UART interface.
+  // TODO RX
+  output var logic o_top_uart_tx
 );
 
   sqi_data_t sqi_rd_data;
@@ -83,6 +87,18 @@ module idli_top_m import idli_pkg::*; (
 
     .o_pc               (pc),
     .o_pc_next          (pc_next)
+  );
+
+  idli_uart_m uart_u (
+    .i_uart_gck     (i_top_gck),
+    .i_uart_rst_n   (i_top_rst_n),
+
+    .i_uart_tx      (ex_alu_out),
+    .i_uart_tx_vld  ('0),
+    // verilator lint_off PINCONNECTEMPTY
+    .o_uart_tx_acp  (),
+    // verilator lint_on PINCONNECTEMPTY
+    .o_uart_tx      (o_top_uart_tx)
   );
 
 endmodule
