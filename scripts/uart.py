@@ -31,19 +31,19 @@ class UART:
     # Handle incoming data.
     def _rising_edge_rx(self, rx):
         if self.rx_state == 'idle':
-            # Move out of the idle state if we see the start bit (0).
+            # Move out of the idle state if we see the start bit (0). This means
+            # the chip is now in START so the next cycle will be data.
             if rx == 0:
-                self.rx_state = 'start'
-        elif self.rx_state == 'start':
-            # Next is the incoming data so zero out buffer.
-            if self.rx_data is not None:
-                raise Exception(f'Data in RX buffer at start: {self.rx_data}')
+                if self.verbose:
+                    self.log('UART RX start')
 
-            if self.verbose:
-                self.log('UART RX start')
+                if self.rx_data is not None:
+                    raise Exception(
+                        f'Data in RX buffer at start: {self.rx_data}'
+                    )
 
-            self.rx_data = ''
-            self.rx_state = 'data'
+                self.rx_state = 'data'
+                self.rx_data = ''
         elif self.rx_state == 'data':
             # Stay in the data state until we have all the required bits.
             self.rx_data = f'{rx}{self.rx_data}'
