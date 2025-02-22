@@ -21,8 +21,11 @@ module idli_ex_m import idli_pkg::*; (
   input  var sqi_data_t i_ex_pc_next,
   output var logic      o_ex_redirect,
 
-  // ALU output for performing memory accesses and branches.
-  output var sqi_data_t o_ex_alu_out
+  // ALU output for transferring data to the rest of the core.
+  output var sqi_data_t o_ex_alu_out,
+
+  // Interface to the UART.
+  output var logic o_ex_uart_tx_vld
 );
 
   // Track progress through the instruction using a 2b counter. We process 16b
@@ -187,6 +190,11 @@ module idli_ex_m import idli_pkg::*; (
 
   // Forward the ALU output.
   always_comb o_ex_alu_out = alu_out;
+
+  // UART TX is valid depending on the counter - the low 8b is sent on the
+  // first two instruction cycles, and the high on the final two.
+  always_comb o_ex_uart_tx_vld = op_vld_q && (op_q.uart_tx_lo && !ctr_q[1]
+                                          ||  op_q.uart_tx_hi &&  ctr_q[1]);
 
 
 `ifdef idli_debug_signals_d

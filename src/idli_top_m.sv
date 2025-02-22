@@ -29,6 +29,7 @@ module idli_top_m import idli_pkg::*; (
 
   logic       ex_redirect;
   sqi_data_t  ex_alu_out;
+  logic       ex_uart_tx_vld;
 
   idli_sqi_m sqi_u (
     .i_sqi_gck        (i_top_gck),
@@ -59,22 +60,24 @@ module idli_top_m import idli_pkg::*; (
   );
 
   idli_ex_m ex_u (
-    .i_ex_gck       (i_top_gck),
-    .i_ex_rst_n     (i_top_rst_n),
+    .i_ex_gck         (i_top_gck),
+    .i_ex_rst_n       (i_top_rst_n),
 
-    .i_ex_op        (dcd_op),
-    .i_ex_op_vld    (dcd_op_vld),
+    .i_ex_op          (dcd_op),
+    .i_ex_op_vld      (dcd_op_vld),
     // verilator lint_off PINCONNECTEMPTY
-    .o_ex_op_acp    (),
+    .o_ex_op_acp      (),
     // verilator lint_on PINCONNECTEMPTY
 
-    .i_ex_imm       (sqi_rd_data),
+    .i_ex_imm         (sqi_rd_data),
 
-    .i_ex_pc        (pc),
-    .i_ex_pc_next   (pc_next),
-    .o_ex_redirect  (ex_redirect),
+    .i_ex_pc          (pc),
+    .i_ex_pc_next     (pc_next),
+    .o_ex_redirect    (ex_redirect),
 
-    .o_ex_alu_out   (ex_alu_out)
+    .o_ex_alu_out     (ex_alu_out),
+
+    .o_ex_uart_tx_vld (ex_uart_tx_vld)
   );
 
   idli_pc_m pc_u (
@@ -94,7 +97,7 @@ module idli_top_m import idli_pkg::*; (
     .i_uart_rst_n   (i_top_rst_n),
 
     .i_uart_tx      (ex_alu_out),
-    .i_uart_tx_vld  ('0),
+    .i_uart_tx_vld  (ex_uart_tx_vld),
     // verilator lint_off PINCONNECTEMPTY
     .o_uart_tx_acp  (),
     // verilator lint_on PINCONNECTEMPTY

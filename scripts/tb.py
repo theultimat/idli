@@ -221,7 +221,7 @@ class TestBench:
         self.log('BENCH: RESET COMPLETE')
 
         # TODO Run until test completion - for now just run for a few cycles.
-        await ClockCycles(self.dut.gck, 120)
+        await ClockCycles(self.dut.gck, 200)
 
         self._check_uart_data()
         if self.sim_uart_rx:
