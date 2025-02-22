@@ -344,6 +344,13 @@ def write_binary(args, items):
                 f.write(item.encode())
                 mem_size += item.size()
 
+        # Pad out with NOP instructions so we don't get uninitialised accesses
+        # due to the pipeline lookahead.
+        for _ in range(4):
+            f.write(isa.Instruction().encode())
+            mem_size += 1
+
+
     # Check we haven't exceed the maximum supported memory size.
     if mem_size > (1 << 16):
         raise Exception(f'Binary will exceed memory size: {mem_size}')
