@@ -362,4 +362,22 @@ module idli_decode_m import idli_pkg::*; (
     endcase
   end
 
+  // UART TX is either 8b or 16b if enabled.
+  always_comb begin
+    case (state_q)
+      STATE_BP_JP_UTX: begin
+        op_d.uart_tx_lo = i_dcd_enc[3];
+        op_d.uart_tx_hi = i_dcd_enc[3] & i_dcd_enc[0];
+      end
+      STATE_C: begin
+        op_d.uart_tx_lo = op_q.uart_tx_lo;
+        op_d.uart_tx_hi = op_q.uart_tx_hi;
+      end
+      default: begin
+        op_d.uart_tx_lo = '0;
+        op_d.uart_tx_hi = '0;
+      end
+    endcase
+  end
+
 endmodule

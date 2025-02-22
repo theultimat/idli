@@ -73,6 +73,10 @@ typedef struct packed {
   // Whether PC or LR are written by the instruction.
   logic   wr_pc;
   logic   wr_lr;
+
+  // UART control signals.
+  logic uart_tx_lo;
+  logic uart_tx_hi;
 } op_t;
 
 endpackage
