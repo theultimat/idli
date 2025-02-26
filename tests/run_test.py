@@ -25,7 +25,7 @@ async def run_test(dut):
         raise Exception(f'Bad input binary: {path}')
 
     # Create the test bench for cosimulation.
-    bench = tb.TestBench(dut, path, inputs, outputs)
+    bench = tb.TestBench(dut, path, inputs, outputs, timeout)
 
     # Run the test.
     await bench.run()

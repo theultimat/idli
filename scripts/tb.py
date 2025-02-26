@@ -2,7 +2,9 @@ import struct
 
 import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import RisingEdge, FallingEdge, ClockCycles
+from cocotb.triggers import (
+    RisingEdge, FallingEdge, ClockCycles, Event, with_timeout
+)
 
 import sim
 import sqi
@@ -11,10 +13,9 @@ import uart
 
 # Simulator callback for use with the test bench (defined below).
 class TestBenchCallback(sim.IdliCallback):
-    def __init__(self, tb, uart_in, uart_out):
+    def __init__(self, tb, uart_in):
         self.tb = tb
         self.uart_in = uart_in
-        self.uart_out = uart_out
 
     def write_greg(self, reg, value):
         self.tb.check_greg_write(reg, value)
@@ -50,13 +51,13 @@ class TestBenchCallback(sim.IdliCallback):
 # Test bench for use with cocotb. Loads the memories, sets up the simulator for
 # comparison, etc.
 class TestBench:
-    def __init__(self, dut, path, uart_in, uart_out):
+    def __init__(self, dut, path, uart_in, uart_out, timeout=1000):
         self.dut = dut
         self.log = dut._log.info
 
         self.log('BENCH: INIT BEGIN')
 
-        self.cb = TestBenchCallback(self, uart_in, uart_out)
+        self.cb = TestBenchCallback(self, uart_in)
         self.sim = sim.Idli(path, callback=self.cb)
 
         self.mem = [
@@ -67,12 +68,21 @@ class TestBench:
 
         self.sim_uart_rx = []
         self.rtl_uart_rx = []
+        self.ref_uart_rx = [x for x, in struct.iter_unpack('<B', uart_out)]
+
+        # Add 'END' to the expected UART RX output - this will be followed by
+        # the exit code.
+        self.ref_uart_rx.extend([ord(x) for x in 'END'])
 
         self.uart = uart.UART(
             rx_cb=lambda x: self.rtl_uart_rx.append(x),
             verbose=True,
             log=lambda x: self.log(f'UART: {x}'),
         )
+
+        self.timeout = timeout
+        self.exit_code = []
+        self.end_of_test = Event()
 
         self.log('BENCH: INIT COMPLETE')
 
@@ -169,6 +179,20 @@ class TestBench:
             self.log(f'UART: sim=0x{sim:02x} rtl=0x{rtl:02x}')
             assert sim == rtl
 
+            # Check the output matches the expected from the file, and if we've
+            # reached the end of the test then this is the exit code.
+            if self.ref_uart_rx:
+                ref = self.ref_uart_rx.pop(0)
+                assert ref == rtl
+            else:
+                self.exit_code.append(sim)
+
+                # If we have 16b of exit code then the test is complete.
+                if len(self.exit_code) == 2:
+                    lo, hi = self.exit_code
+                    self.exit_code = (hi << 8) | lo
+                    self.end_of_test.set()
+
     # Check UART RX and transmit for TX.
     async def _check_uart(self):
         rx = self.dut.uart_tx
@@ -220,14 +244,23 @@ class TestBench:
 
         self.log('BENCH: RESET COMPLETE')
 
-        # TODO Run until test completion - for now just run for a few cycles.
-        await ClockCycles(self.dut.gck, 200)
+        # Run until test completion or timeout.
+        await with_timeout(self.end_of_test.wait(), self.timeout, 'ns')
+
+        if self.end_of_test.is_set():
+            self.log(f'BENCH: exit_code={self.exit_code}')
+        else:
+            self.log('BENCH: TEST TIMEOUT')
 
         self._check_uart_data()
         if self.sim_uart_rx:
             raise Exception(f'Outstanding sim UART: {self.sim_uart_rx}')
         if self.rtl_uart_rx:
             raise Exception(f'Outstanding RTL UART: {self.rtl_uart_rx}')
+
+        # Check the exit code is correct.
+        if self.exit_code != 0:
+            raise Exception(f'Bad exit code from test: {self.exit_code}')
 
 
 # Load UART values for test input or output. These files are formatted as a
