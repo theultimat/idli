@@ -24,6 +24,11 @@ module idli_ex_m import idli_pkg::*; (
   // ALU output for transferring data to the rest of the core.
   output var sqi_data_t o_ex_alu_out,
 
+  // Current instruction that's executing and how far through we are.
+  output var op_t         o_ex_op,
+  output var logic        o_ex_op_vld,
+  output var logic [1:0]  o_ex_ctr,
+
   // Interface to the UART.
   output var logic o_ex_uart_tx_vld
 );
@@ -188,8 +193,11 @@ module idli_ex_m import idli_pkg::*; (
   // Redirect if we're writing the PC.
   always_comb o_ex_redirect = op_vld_q && op_q.wr_pc;
 
-  // Forward the ALU output.
+  // Forward the ALU output and op etc.
   always_comb o_ex_alu_out = alu_out;
+  always_comb o_ex_op      = op_q;
+  always_comb o_ex_op_vld  = op_vld_q;
+  always_comb o_ex_ctr     = ctr_q;
 
   // UART TX is valid depending on the counter - the low 8b is sent on the
   // first two instruction cycles, and the high on the final two.

@@ -30,6 +30,7 @@ module idli_tb_m import idli_pkg::*; ();
   logic [15:0] ex_pc_q;
   logic [15:0] ex_pc_d;
   logic [15:0] ex_pc;
+  logic        ex_gck;
 
 `endif // idli_debug_signals_d
 
@@ -71,9 +72,12 @@ module idli_tb_m import idli_pkg::*; ();
   always_comb ex_pc_d = {idli_u.ex_u.i_ex_pc, ex_pc_q[15:4]};
   always_comb ex_pc   = ex_pc_d - 16'd1;
 
-  always_ff @(posedge gck) begin
+  always_ff @(posedge ex_gck) begin
     ex_pc_q <= ex_pc_d;
   end
+
+  // Take the gated clock out from the execution unit.
+  always_comb ex_gck = idli_u.ex_u.i_ex_gck;
 
 `endif // idli_debug_signals_d
 

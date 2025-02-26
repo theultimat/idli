@@ -64,19 +64,18 @@ module idli_uart_m import idli_pkg::*; (
     endcase
   end
 
-  // Accept incoming data at 4b per cycle, and if not then rotate 1b per
-  // cycle.
+  // Data incoming from the core is valid on IDLE or START at 4b per cycle,
+  // otherwise rotate the register at 1b per cycle.
   always_ff @(posedge i_uart_gck) begin
-    if (o_uart_tx_acp) begin
+    if (tx_state_q == STATE_IDLE || tx_state_q == STATE_START) begin
       tx_data_q <= {i_uart_tx, tx_data_q[7:4]};
     end else begin
       tx_data_q <= {tx_data_q[0], tx_data_q[7:1]};
     end
   end
 
-  // Only accept incoming data from the core when we're in IDLE or START.
-  always_comb o_uart_tx_acp = tx_state_q == STATE_IDLE
-                           || tx_state_q == STATE_START;
+  // Only accept a new batch of data if we're IDLE.
+  always_comb o_uart_tx_acp = tx_state_q == STATE_IDLE;
 
   // Output the data bits or IDLE/START.
   always_comb begin
