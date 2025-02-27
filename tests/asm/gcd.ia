@@ -12,9 +12,9 @@ gcd:                        # r0 = a, r1 = b
 main:
     urx     r0              # a = uart.recv()
     urx     r1              # b = uart.recv()
-    push    lr..lr          # push(lr)
+    mov     r2, lr          # tmp = lr
     bl      @gcd            # gcd(a, b)
-    pop     lr..lr          # lr = pop()
+    mov     lr, r2          # lr = tmp
     utx     r0              # uart.send(a)
     movz    r0              # retval = 0
     ret                     # return retval
