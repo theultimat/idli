@@ -383,4 +383,18 @@ module idli_decode_m import idli_pkg::*; (
     endcase
   end
 
+  // UART RX can only be determined on the final cycle.
+  always_comb begin
+    case (state_q)
+      STATE_INC_URX_1: begin
+        op_d.uart_rx_lo = i_dcd_enc[1];
+        op_d.uart_rx_hi = &i_dcd_enc[1:0];
+      end
+      default: begin
+        op_d.uart_rx_lo = '0;
+        op_d.uart_rx_hi = '0;
+      end
+    endcase
+  end
+
 endmodule

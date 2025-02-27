@@ -77,6 +77,8 @@ typedef struct packed {
   // UART control signals.
   logic uart_tx_lo;
   logic uart_tx_hi;
+  logic uart_rx_lo;
+  logic uart_rx_hi;
 } op_t;
 
 endpackage
