@@ -14,7 +14,7 @@ module idli_top_m import idli_pkg::*; (
   output var sqi_data_t [SQI_NUM-1:0] o_top_sio,
 
   // UART interface.
-  // TODO RX
+  input  var logic i_top_uart_rx,
   output var logic o_top_uart_tx
 );
 

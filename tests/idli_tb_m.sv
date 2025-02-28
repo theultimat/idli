@@ -20,6 +20,7 @@ module idli_tb_m import idli_pkg::*; ();
   sqi_data_t sqi_sio_out_lo;
 
   logic uart_tx;
+  logic uart_rx;
 
 `ifdef idli_debug_signals_d
 
@@ -31,6 +32,7 @@ module idli_tb_m import idli_pkg::*; ();
   logic [15:0] ex_pc_d;
   logic [15:0] ex_pc;
   logic        ex_gck;
+  logic        ex_uart_rx;
 
 `endif // idli_debug_signals_d
 
@@ -45,6 +47,7 @@ module idli_tb_m import idli_pkg::*; ();
     .i_top_sio      ({sqi_sio_in_hi, sqi_sio_in_lo}),
     .o_top_sio      ({sqi_sio_out_hi, sqi_sio_out_lo}),
 
+    .i_top_uart_rx  (uart_rx),
     .o_top_uart_tx  (uart_tx)
   );
 
@@ -78,6 +81,16 @@ module idli_tb_m import idli_pkg::*; ();
 
   // Take the gated clock out from the execution unit.
   always_comb ex_gck = idli_u.ex_u.i_ex_gck;
+
+  // Signal indicates when UART RX is waiting for data.
+  always_comb begin
+    ex_uart_rx = '0;
+
+    if (idli_u.ex_u.op_vld_q) begin
+      ex_uart_rx = (idli_u.ex_u.op_q.uart_rx_lo && idli_u.ex_u.ctr_q == 2'd0)
+                || (idli_u.ex_u.op_q.uart_rx_hi && idli_u.ex_u.ctr_q == 2'd2);
+    end
+  end
 
 `endif // idli_debug_signals_d
 

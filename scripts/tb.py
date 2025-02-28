@@ -28,8 +28,6 @@ class TestBenchCallback(sim.IdliCallback):
         value, = struct.unpack_from(fmt, self.uart_in)
         self.uart_in = self.uart_in[width:]
 
-        self.tb.log(f'UART_RX: data=0x{value:x} width={width}')
-
         return value
 
     def write_uart(self, value, width):
@@ -76,6 +74,7 @@ class TestBench:
 
         self.uart = uart.UART(
             rx_cb=lambda x: self.rtl_uart_rx.append(x),
+            tx_data=uart_in,
             verbose=True,
             log=lambda x: self.log(f'UART: {x}'),
         )
@@ -196,13 +195,19 @@ class TestBench:
     # Check UART RX and transmit for TX.
     async def _check_uart(self):
         rx = self.dut.uart_tx
+        tx = self.dut.uart_rx
+
+        tx_start = self.dut.ex_uart_rx
 
         await RisingEdge(self.dut.rst_n)
 
         while True:
             await RisingEdge(self.dut.gck)
 
-            self.uart.rising_edge(rx.value.integer & 1)
+            tx.value = self.uart.rising_edge(
+                rx.value.integer & 1,
+                tx_start.value.integer & 1,
+            )
             self._check_uart_data()
 
     # Check a GREG write was correct by comparing the value the sim has just
