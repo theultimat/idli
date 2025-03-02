@@ -93,11 +93,19 @@ class UART:
             self.tx_data[0] >>= 1
 
             # If this is the final cycle then pop it of the input buffer and
-            # move back to idle, otherwise send the next bit.
+            # move to stop, otherwise send the next bit.
             if cycle >= 7:
-                self.tx_state = 'idle'
+                self.tx_state = 'stop'
+                self.tx_data.pop(0)
+
+                if self.verbose:
+                    self.log('UART TX data done')
             else:
-                self.tx_start = f'data{cycle + 1}'
+                self.tx_state = f'data{cycle + 1}'
+        elif self.tx_state == 'stop':
+            # Make sure there's at least one stop cycle before the next start.
+            tx_data = 1
+            self.tx_state = 'idle'
         else:
             raise Exception(f'Unknown TX state: {self.tx_state}')
 
