@@ -17,7 +17,10 @@ module idli_uart_m import idli_pkg::*; (
   input  var sqi_data_t i_uart_tx,
   input  var logic      i_uart_tx_vld,
   output var logic      o_uart_tx_acp,
-  output var logic      o_uart_tx
+  output var logic      o_uart_tx,
+
+  // Whether a new instruction is being accepted by EX.
+  input  var logic      i_uart_ex_op_acp
 );
 
   // Simple state machine for both RX and TX.
@@ -47,6 +50,9 @@ module idli_uart_m import idli_pkg::*; (
 
   // Shift register for RX data.
   logic [7:0] rx_data_q;
+
+  // Whether RX data is being accepted this cycle.
+  logic rx_acp;
 
 
   // Flop the next states.
@@ -113,7 +119,7 @@ module idli_uart_m import idli_pkg::*; (
       STATE_DATA_5:   rx_state_d = STATE_DATA_6;
       STATE_DATA_6:   rx_state_d = STATE_DATA_7;
       STATE_DATA_7:   rx_state_d = STATE_RX_OUT_0;
-      STATE_RX_OUT_0: rx_state_d = i_uart_rx_acp ? STATE_RX_OUT_1 : rx_state_q;
+      STATE_RX_OUT_0: rx_state_d = rx_acp ? STATE_RX_OUT_1 : rx_state_q;
       default:      rx_state_d = STATE_IDLE;
     endcase
   end
@@ -129,8 +135,8 @@ module idli_uart_m import idli_pkg::*; (
       STATE_DATA_5,
       STATE_DATA_6,
       STATE_DATA_7:   rx_data_q      <= {i_uart_rx, rx_data_q[7:1]};
-      STATE_RX_OUT_0: rx_data_q[3:0] <= i_uart_rx_acp ? rx_data_q[7:4]
-                                                      : rx_data_q[3:0];
+      STATE_RX_OUT_0: rx_data_q[3:0] <= rx_acp ? rx_data_q[7:4]
+                                               : rx_data_q[3:0];
       default:        rx_data_q      <= rx_data_q;
     endcase
   end
@@ -146,5 +152,10 @@ module idli_uart_m import idli_pkg::*; (
 
   // Output received data to the rest of the core.
   always_comb o_uart_rx = sqi_data_t'(rx_data_q[3:0]);
+
+  // If this is the first cycle that EX is accepting RX data then we need to
+  // hold the value for an extra cycle before shifting, but if we're part way
+  // through already then we can shift immediately.
+  always_comb rx_acp = i_uart_rx_acp && !i_uart_ex_op_acp;
 
 endmodule

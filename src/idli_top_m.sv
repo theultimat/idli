@@ -108,18 +108,20 @@ module idli_top_m import idli_pkg::*; (
   );
 
   idli_uart_m uart_u (
-    .i_uart_gck     (i_top_gck),
-    .i_uart_rst_n   (i_top_rst_n),
+    .i_uart_gck       (i_top_gck),
+    .i_uart_rst_n     (i_top_rst_n),
 
-    .i_uart_rx      (i_top_uart_rx),
-    .o_uart_rx_vld  (uart_rx_vld),
-    .i_uart_rx_acp  (ex_uart_rx_acp),
-    .o_uart_rx      (uart_rx_data),
+    .i_uart_rx        (i_top_uart_rx),
+    .o_uart_rx_vld    (uart_rx_vld),
+    .i_uart_rx_acp    (ex_uart_rx_acp),
+    .o_uart_rx        (uart_rx_data),
 
-    .i_uart_tx      (ex_alu_out),
-    .i_uart_tx_vld  (ex_uart_tx_vld),
-    .o_uart_tx_acp  (uart_tx_acp),
-    .o_uart_tx      (o_top_uart_tx)
+    .i_uart_tx        (ex_alu_out),
+    .i_uart_tx_vld    (ex_uart_tx_vld),
+    .o_uart_tx_acp    (uart_tx_acp),
+    .o_uart_tx        (o_top_uart_tx),
+
+    .i_uart_ex_op_acp (ex_op_acp)
   );
 
   idli_sync_m sync_u (
