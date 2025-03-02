@@ -33,6 +33,7 @@ module idli_tb_m import idli_pkg::*; ();
   logic [15:0] ex_pc;
   logic        ex_gck;
   logic        sync_uart_rx_stall;
+  logic        sync_gate_q_dly;
 
 `endif // idli_debug_signals_d
 
@@ -55,7 +56,7 @@ module idli_tb_m import idli_pkg::*; ();
 `ifdef idli_debug_signals_d
 
   // Probe signals within the core.
-  always_comb ex_instr_done = idli_u.ex_u.instr_done;
+  always_comb ex_instr_done = idli_u.ex_u.instr_done && sync_gate_q_dly;
 
   for (genvar REG = 0; REG < 8; REG++) begin : num_gregs_b
     // Take the value that will be flopped on the following cycle so it
@@ -85,6 +86,18 @@ module idli_tb_m import idli_pkg::*; ();
   // When the core is stalled due to waiting for UART RX data. This is used by
   // the bench to start a UART transmission.
   always_comb sync_uart_rx_stall = |idli_u.sync_u.stall[3:2];
+
+  // Gate from sync delayed by a single cycle - this allows us to check e.g.
+  // the instruction done is only valid when the clock wasn't gated off. We
+  // need the *previous* cycle as we're checking whether the signal was valid
+  // at the end of the previous cycle.
+  always_ff @(negedge gck, negedge rst_n) begin
+    if (!rst_n) begin
+      sync_gate_q_dly <= '1;
+    end else begin
+      sync_gate_q_dly <= idli_u.sync_u.gate_q;
+    end
+  end
 
 `endif // idli_debug_signals_d
 
