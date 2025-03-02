@@ -32,7 +32,7 @@ module idli_tb_m import idli_pkg::*; ();
   logic [15:0] ex_pc_d;
   logic [15:0] ex_pc;
   logic        ex_gck;
-  logic        ex_uart_rx;
+  logic        sync_uart_rx_stall;
 
 `endif // idli_debug_signals_d
 
@@ -82,15 +82,9 @@ module idli_tb_m import idli_pkg::*; ();
   // Take the gated clock out from the execution unit.
   always_comb ex_gck = idli_u.ex_u.i_ex_gck;
 
-  // Signal indicates when UART RX is waiting for data.
-  always_comb begin
-    ex_uart_rx = '0;
-
-    if (idli_u.ex_u.op_vld_q) begin
-      ex_uart_rx = (idli_u.ex_u.op_q.uart_rx_lo && idli_u.ex_u.ctr_q == 2'd0)
-                || (idli_u.ex_u.op_q.uart_rx_hi && idli_u.ex_u.ctr_q == 2'd2);
-    end
-  end
+  // When the core is stalled due to waiting for UART RX data. This is used by
+  // the bench to start a UART transmission.
+  always_comb sync_uart_rx_stall = |idli_u.sync_u.stall[3:2];
 
 `endif // idli_debug_signals_d
 

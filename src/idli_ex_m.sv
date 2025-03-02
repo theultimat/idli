@@ -30,7 +30,9 @@ module idli_ex_m import idli_pkg::*; (
   output var logic [1:0]  o_ex_ctr,
 
   // Interface to the UART.
-  output var logic o_ex_uart_tx_vld
+  input  var sqi_data_t i_ex_uart_rx,
+  output var logic      o_ex_uart_tx_vld,
+  output var logic      o_ex_uart_rx_acp
 );
 
   // Track progress through the instruction using a 2b counter. We process 16b
@@ -164,6 +166,7 @@ module idli_ex_m import idli_pkg::*; (
     case (op_q.rhs_src)
       RHS_SRC_REG:  rhs_data = rhs_reg_data;
       RHS_SRC_IMM:  rhs_data = i_ex_imm;
+      RHS_SRC_UART: rhs_data = i_ex_uart_rx;
       default:      rhs_data = sqi_data_t'('x);
     endcase
   end
@@ -203,6 +206,10 @@ module idli_ex_m import idli_pkg::*; (
   // first two instruction cycles, and the high on the final two.
   always_comb o_ex_uart_tx_vld = op_vld_q && (op_q.uart_tx_lo && !ctr_q[1]
                                           ||  op_q.uart_tx_hi &&  ctr_q[1]);
+
+  // UART RX should be accepted on URX or URXB.
+  always_comb o_ex_uart_rx_acp = op_vld_q && (op_q.uart_rx_lo && !ctr_q[1]
+                                          ||  op_q.uart_rx_hi &&  ctr_q[1]);
 
 
 `ifdef idli_debug_signals_d

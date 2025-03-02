@@ -7,6 +7,12 @@ module idli_uart_m import idli_pkg::*; (
   input  var logic  i_uart_gck,
   input  var logic  i_uart_rst_n,
 
+  // RX interface.
+  input  var logic      i_uart_rx,
+  output var logic      o_uart_rx_vld,
+  input  var logic      i_uart_rx_acp,
+  output var sqi_data_t o_uart_rx,
+
   // TX interface.
   input  var sqi_data_t i_uart_tx,
   input  var logic      i_uart_tx_vld,
@@ -25,23 +31,32 @@ module idli_uart_m import idli_pkg::*; (
     STATE_DATA_4,
     STATE_DATA_5,
     STATE_DATA_6,
-    STATE_DATA_7
+    STATE_DATA_7,
+    STATE_RX_OUT_0,
+    STATE_RX_OUT_1
   } state_t;
 
   // Current and next state for transmission.
   state_t tx_state_q;
   state_t tx_state_d;
+  state_t rx_state_q;
+  state_t rx_state_d;
 
   // Shift register for TX data.
   logic [7:0] tx_data_q;
+
+  // Shift register for RX data.
+  logic [7:0] rx_data_q;
 
 
   // Flop the next states.
   always_ff @(posedge i_uart_gck, negedge i_uart_rst_n) begin
     if (!i_uart_rst_n) begin
       tx_state_q <= STATE_IDLE;
+      rx_state_q <= STATE_IDLE;
     end else begin
       tx_state_q <= tx_state_d;
+      rx_state_q <= rx_state_d;
     end
   end
 
@@ -85,5 +100,51 @@ module idli_uart_m import idli_pkg::*; (
       default:      o_uart_tx = tx_data_q[0];
     endcase
   end
+
+  // Wait in RX IDLE until we see START, then shift in all the data.
+  always_comb begin
+    case (rx_state_q)
+      STATE_IDLE:     rx_state_d = i_uart_rx ? STATE_IDLE : STATE_DATA_0;
+      STATE_DATA_0:   rx_state_d = STATE_DATA_1;
+      STATE_DATA_1:   rx_state_d = STATE_DATA_2;
+      STATE_DATA_2:   rx_state_d = STATE_DATA_3;
+      STATE_DATA_3:   rx_state_d = STATE_DATA_4;
+      STATE_DATA_4:   rx_state_d = STATE_DATA_5;
+      STATE_DATA_5:   rx_state_d = STATE_DATA_6;
+      STATE_DATA_6:   rx_state_d = STATE_DATA_7;
+      STATE_DATA_7:   rx_state_d = STATE_RX_OUT_0;
+      STATE_RX_OUT_0: rx_state_d = i_uart_rx_acp ? STATE_RX_OUT_1 : rx_state_q;
+      default:      rx_state_d = STATE_IDLE;
+    endcase
+  end
+
+  // Shift incoming RX data and shift out when accept is high.
+  always_ff @(posedge i_uart_gck) begin
+    case (rx_state_q)
+      STATE_DATA_0,
+      STATE_DATA_1,
+      STATE_DATA_2,
+      STATE_DATA_3,
+      STATE_DATA_4,
+      STATE_DATA_5,
+      STATE_DATA_6,
+      STATE_DATA_7:   rx_data_q      <= {i_uart_rx, rx_data_q[7:1]};
+      STATE_RX_OUT_0: rx_data_q[3:0] <= i_uart_rx_acp ? rx_data_q[7:4]
+                                                      : rx_data_q[3:0];
+      default:        rx_data_q      <= rx_data_q;
+    endcase
+  end
+
+  // Output is valid when we have a full RX buffer. We don't set high on the
+  // second cycle as we need to be low for the clock gating.
+  always_comb begin
+    case (rx_state_q)
+      STATE_RX_OUT_0: o_uart_rx_vld = '1;
+      default:        o_uart_rx_vld = '0;
+    endcase
+  end
+
+  // Output received data to the rest of the core.
+  always_comb o_uart_rx = sqi_data_t'(rx_data_q[3:0]);
 
 endmodule

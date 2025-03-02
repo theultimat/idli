@@ -34,8 +34,11 @@ module idli_top_m import idli_pkg::*; (
   op_t        ex_op;
   logic       ex_op_vld;
   logic [1:0] ex_ctr;
+  logic       ex_uart_rx_acp;
 
   logic       uart_tx_acp;
+  logic       uart_rx_vld;
+  sqi_data_t  uart_rx_data;
 
   logic       sync_gck;
 
@@ -87,7 +90,9 @@ module idli_top_m import idli_pkg::*; (
     .o_ex_op_vld      (ex_op_vld),
     .o_ex_ctr         (ex_ctr),
 
-    .o_ex_uart_tx_vld (ex_uart_tx_vld)
+    .i_ex_uart_rx     (uart_rx_data),
+    .o_ex_uart_tx_vld (ex_uart_tx_vld),
+    .o_ex_uart_rx_acp (ex_uart_rx_acp)
   );
 
   idli_pc_m pc_u (
@@ -106,6 +111,11 @@ module idli_top_m import idli_pkg::*; (
     .i_uart_gck     (i_top_gck),
     .i_uart_rst_n   (i_top_rst_n),
 
+    .i_uart_rx      (i_top_uart_rx),
+    .o_uart_rx_vld  (uart_rx_vld),
+    .i_uart_rx_acp  (ex_uart_rx_acp),
+    .o_uart_rx      (uart_rx_data),
+
     .i_uart_tx      (ex_alu_out),
     .i_uart_tx_vld  (ex_uart_tx_vld),
     .o_uart_tx_acp  (uart_tx_acp),
@@ -123,6 +133,7 @@ module idli_top_m import idli_pkg::*; (
     .i_sync_ex_op_vld   (ex_op_vld),
     .i_sync_ex_ctr      (ex_ctr),
     .i_sync_uart_tx_acp (uart_tx_acp),
+    .i_sync_uart_rx_vld (uart_rx_vld),
 
     .o_sync_gck         (sync_gck)
   );

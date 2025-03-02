@@ -197,7 +197,7 @@ class TestBench:
         rx = self.dut.uart_tx
         tx = self.dut.uart_rx
 
-        tx_start = self.dut.ex_uart_rx
+        tx_start = self.dut.sync_uart_rx_stall
 
         await RisingEdge(self.dut.rst_n)
 
