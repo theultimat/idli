@@ -305,12 +305,20 @@ module idli_decode_m import idli_pkg::*; (
                                                     : LHS_SRC_ZERO;
       STATE_BP_JP_UTX:  op_d.lhs_src = |i_dcd_enc[3:2] ? LHS_SRC_ZERO
                                                        : LHS_SRC_PC;
+      STATE_INC_URX_1:  op_d.lhs_src = i_dcd_enc[1] ? LHS_SRC_ZERO
+                                                    : LHS_SRC_REG;
       default:          op_d.lhs_src = op_q.lhs_src;
     endcase
   end
 
-  // C is always read from the register unless it's the immediate.
-  always_comb op_d.rhs_src = &i_dcd_enc[2:0] ? RHS_SRC_IMM : RHS_SRC_REG;
+  // C can be read from the register, immediate, or UART.
+  always_comb begin
+    case (state_q)
+      STATE_INC_URX_1: op_d.rhs_src = RHS_SRC_UART;
+      default:         op_d.rhs_src = &i_dcd_enc[2:0] ? RHS_SRC_IMM
+                                                      : RHS_SRC_REG;
+    endcase
+  end
 
   // Determine the ALU operation to execute.
   always_comb begin
@@ -319,6 +327,7 @@ module idli_decode_m import idli_pkg::*; (
       STATE_AND_ANDN:         op_d.alu_op = ALU_OP_AND;
       STATE_OR_XOR:           op_d.alu_op = i_dcd_enc[3] ? ALU_OP_XOR : ALU_OP_OR;
       STATE_MOV_PC_BP_JP_UTX: op_d.alu_op = ALU_OP_ADD;
+      STATE_INC_URX_0:        op_d.alu_op = ALU_OP_ADD;
       default:                op_d.alu_op = op_q.alu_op;
     endcase
   end
@@ -328,7 +337,7 @@ module idli_decode_m import idli_pkg::*; (
   always_comb begin
     case (state_q)
       STATE_ADD_SUB:        op_d.alu_cin = i_dcd_enc[3];
-      STATE_INC_URX_1:      op_d.alu_cin = i_dcd_enc[0];
+      STATE_INC_URX_1:      op_d.alu_cin = ~i_dcd_enc[1];
       STATE_ABC, STATE_BC:  op_d.alu_cin = op_q.alu_cin;
       default:              op_d.alu_cin = '0;
     endcase

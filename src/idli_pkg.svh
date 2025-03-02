@@ -41,9 +41,10 @@ typedef enum logic [1:0] {
 } lhs_src_t;
 
 // Possible source locations for RHS operand.
-typedef enum logic {
+typedef enum logic [1:0] {
   RHS_SRC_REG,
-  RHS_SRC_IMM
+  RHS_SRC_IMM,
+  RHS_SRC_UART
 } rhs_src_t;
 
 // Decoded operation. Contains control signals for execution.
