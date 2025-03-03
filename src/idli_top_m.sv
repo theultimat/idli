@@ -128,9 +128,6 @@ module idli_top_m import idli_pkg::*; (
     .i_sync_gck         (i_top_gck),
     .i_sync_rst_n       (i_top_rst_n),
 
-    .i_sync_dcd_op      (dcd_op),
-    .i_sync_dcd_op_vld  (dcd_op_vld),
-    .i_sync_ex_op_acp   (ex_op_acp),
     .i_sync_ex_op       (ex_op),
     .i_sync_ex_op_vld   (ex_op_vld),
     .i_sync_ex_ctr      (ex_ctr),
