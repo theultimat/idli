@@ -60,14 +60,16 @@ module idli_top_m import idli_pkg::*; (
   );
 
   idli_decode_m decode_u (
-    .i_dcd_gck      (sync_gck),
-    .i_dcd_rst_n    (i_top_rst_n),
+    .i_dcd_gck          (sync_gck),
+    .i_dcd_rst_n        (i_top_rst_n),
 
-    .i_dcd_enc      (sqi_rd_data),
-    .i_dcd_enc_vld  (sqi_rd_data_vld),
+    .i_dcd_enc          (sqi_rd_data),
+    .i_dcd_enc_vld      (sqi_rd_data_vld),
 
-    .o_dcd_op       (dcd_op),
-    .o_dcd_op_vld   (dcd_op_vld)
+    .o_dcd_op           (dcd_op),
+    .o_dcd_op_vld       (dcd_op_vld),
+
+    .i_dcd_ex_redirect  (ex_redirect)
   );
 
   idli_ex_m ex_u (

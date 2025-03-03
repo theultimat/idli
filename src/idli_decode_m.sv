@@ -13,7 +13,10 @@ module idli_decode_m import idli_pkg::*; (
 
   // Decoded instruction and whether it's valid.
   output var op_t   o_dcd_op,
-  output var logic  o_dcd_op_vld
+  output var logic  o_dcd_op_vld,
+
+  // Whether a redirect has taken place.
+  input  var logic  i_dcd_ex_redirect
 );
 
   // As the instruction is decoded 4b per cycle we have a state machine to
@@ -188,8 +191,13 @@ module idli_decode_m import idli_pkg::*; (
       end
       default: begin
         // All states return back to the start for the next instruction,
-        // unless the instruction takes an immediate.
-        state_d = (op_d.rhs_src == RHS_SRC_IMM) ? STATE_IMM_0 : STATE_INIT;
+        // unless the instruction takes an immediate. Special case is on
+        // redirect in which case we should always reset.
+        if (i_dcd_ex_redirect) begin
+          state_d = STATE_INIT;
+        end else begin
+          state_d = (op_d.rhs_src == RHS_SRC_IMM) ? STATE_IMM_0 : STATE_INIT;
+        end
       end
     endcase
   end
