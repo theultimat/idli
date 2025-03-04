@@ -149,17 +149,23 @@ class TestBench:
     # model to compare.
     async def _check_instr(self):
         instr_done = self.dut.ex_instr_done
+        instr_skip = self.dut.ex_instr_skip_q
 
         await RisingEdge(self.dut.rst_n)
 
         while True:
             await RisingEdge(self.dut.gck)
 
-            if not instr_done.value:
+            done = instr_done.value
+            skip = instr_skip.value
+
+            if not done and not skip:
                 continue
 
-            # Check PC is correct.
-            self._check_pc()
+            # Check PC is correct. Only do this if the instruction actually ran
+            # as the skip signal is out of sync with the PC.
+            if done:
+                self._check_pc()
 
             # Log the instruction that we think just executed.
             instr, _ = self.sim.next_instr()

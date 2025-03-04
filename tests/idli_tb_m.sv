@@ -34,6 +34,7 @@ module idli_tb_m import idli_pkg::*; ();
   logic        ex_gck;
   logic        sync_uart_rx_stall;
   logic        sync_gate_q_dly;
+  logic        ex_instr_skip_q;
 
 `endif // idli_debug_signals_d
 
@@ -77,7 +78,8 @@ module idli_tb_m import idli_pkg::*; ();
   always_comb ex_pc   = ex_pc_d - 16'd1;
 
   always_ff @(posedge ex_gck) begin
-    ex_pc_q <= ex_pc_d;
+    ex_pc_q         <= ex_pc_d;
+    ex_instr_skip_q <= idli_u.ex_u.instr_skip;
   end
 
   // Take the gated clock out from the execution unit.

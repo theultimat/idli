@@ -76,6 +76,7 @@ module idli_ex_m import idli_pkg::*; (
   // These signals are used in the test bench for debug and synchronising with
   // the behavioural model.
   logic instr_done;
+  logic instr_skip;
 
 `endif // idli_debug_signals_d
 
@@ -215,6 +216,7 @@ module idli_ex_m import idli_pkg::*; (
 `ifdef idli_debug_signals_d
 
   always_comb instr_done = op_vld_q && ctr_q == 2'd3;
+  always_comb instr_skip = i_ex_op_vld && !rd_pred_data;
 
 `endif // idli_debug_signals_d
 
