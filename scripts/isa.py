@@ -54,17 +54,22 @@ PREGS_INV = {v: k for k, v in PREGS.items()}
 # - c   GREG source. This can only hold the values of r0..r6, with r7 being a
 #       special value indicating the 16b following the instruction should be
 #       treated as an immediate.
+# - d   GREG register range where bit i indicates GREG i is present.
 ENCODINGS = {
     # No-operation.
     'nop':      '0000000000000000',
 
     # Branch on compare register with zero.
-    'beqz':     '0000000100bbbccc',
-    'bnez':     '0000000101bbbccc',
-    'bltz':     '0000000110bbbccc',
-    'blez':     '0000000111bbbccc',
-    'bgtz':     '0000001111bbbccc',
-    'bgez':     '0000010111bbbccc',
+    'beqz':     '0000001000bbbccc',
+    'bnez':     '0000001001bbbccc',
+    'bltz':     '0000001010bbbccc',
+    'blez':     '0000001011bbbccc',
+    'bgtz':     '0000001100bbbccc',
+    'bgez':     '0000001101bbbccc',
+
+    # Push/pop registers to/from the stack.
+    'push':     '00000100dddddddd',
+    'pop':      '00000101dddddddd',
 
     # Compare two sources and store the result in a predicate register.
     'eq':       '01000pp0qqbbbccc',
@@ -107,9 +112,9 @@ ENCODINGS = {
     'ld':       '10100ppaaabbbccc',
     'st':       '10101ppaaabbbccc',
 
-    # Push/pop register range to/from the stack.
-    'push':     '10110ppaaabbb000',
-    'pop':      '10110ppaaabbb001',
+#    # Push/pop register range to/from the stack.
+#    'push':     '10110ppaaabbb000',
+#    'pop':      '10110ppaaabbb001',
 
     # Extract and sign extend low or high byte from GREG.
     'extbl':    '10110ppaaabbb010',
@@ -188,6 +193,8 @@ SYNTAX = {
     'blez':     'blez {b}, {c}',
     'bgtz':     'bgtz {b}, {c}',
     'bgez':     'bgez {b}, {c}',
+    'push':     'push {d}',
+    'pop':      'pop {d}',
     'eq':       'eq.{p} {q}, {b}, {c}',
     'ne':       'ne.{p} {q}, {b}, {c}',
     'lt':       'lt.{p} {q}, {b}, {c}',
@@ -213,8 +220,6 @@ SYNTAX = {
     'st!':      'st!.{p} {a}, {b}, {c}',
     'ld':       'ld.{p} {a}, {b}, {c}',
     'st':       'st.{p} {a}, {b}, {c}',
-    'push':     'push.{p} {a}..{b}',
-    'pop':      'pop.{p} {a}..{b}',
     'extbl':    'extbl.{p} {a}, {b}',
     'extbh':    'extbh.{p} {a}, {b}',
     'insbl':    'insbl.{p} {a}, {b}',
@@ -272,8 +277,6 @@ INSTRS_READ_A = set([
     '!st',
     'st!',
     'st',
-    'push',
-    'pop',
     'insbl',
     'insbt',
     'inc',
@@ -339,7 +342,7 @@ class Instruction:
             raise Exception(f'{error_prefix}Unknown instruction: {instr.name}')
 
         # Find all of the operands from the syntax string and parse them.
-        op_pattern = re.compile(r'\{(?P<name>[abcpq])\}')
+        op_pattern = re.compile(r'\{(?P<name>[abcdpq])\}')
         for name in op_pattern.finditer(syntax):
             name = name.group('name')
 
@@ -362,6 +365,33 @@ class Instruction:
                     )
 
                 instr.ops[name] = PREGS[value]
+                continue
+
+            # Register ranges are a comma-separated list of GREGs, so we assume
+            # all the remaining parts of the line are registers.
+            if name == 'd':
+                reg_mask = 0
+
+                for reg in [value] + parts:
+                    if reg not in GREGS:
+                        raise Exception(
+                            f'{error_prefix}Bad GREG in register range: {reg}'
+                        )
+
+                    bit = 1 << GREGS[reg]
+                    if reg_mask & bit:
+                        raise Exception(
+                            f'{error_prefix}Duplicate GREG in register range: '
+                            f'{reg}'
+                        )
+
+                    reg_mask |= bit
+
+                # All parts have been consumed as part of the range.
+                parts.clear()
+
+                # Save the mask of included registers.
+                instr.ops[name] = reg_mask
                 continue
 
             # If this is operand c then check for an immediate. This could be in
@@ -433,6 +463,12 @@ class Instruction:
                 ops[k] = PREGS_INV[v]
             elif k in 'ab':
                 ops[k] = GREGS_INV[v]
+            elif k == 'd':
+                regs = []
+                for idx, name in GREGS_INV.items():
+                    if v & (1 << idx):
+                        regs.append(name)
+                ops[k] = ', '.join(regs)
             else:
                 if 'imm' in self.ops:
                     v = self.ops['imm']

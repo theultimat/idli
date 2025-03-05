@@ -34,11 +34,10 @@ main:
     st          r3, r0, r2      # ptr[i] = tmp
     inc         r2              # i++
     b           @2b             # goto 2
-3:  push        lr..lr          # push(lr)
-    push        r1..r1          # push(n)
+3:  push        r1, lr          # push(n), push(lr)
     bl          @bsort          # bsort(ptr, n)
     addpc       r0, @data       # ptr = &data
-    pop         r1..r1          # n = pop()
+    pop         r1, lr          # lr = pop(), n = pop()
     movz        r2              # i = 0
 4:  geu         p0, r2, r1      # p = i >= n
     bt.p0       @5f             # if (p) goto 5
@@ -46,6 +45,5 @@ main:
     utx         r3              # uart.send(tmp)
     inc         r2              # i++
     b           @4b             # goto 4
-5:  pop         lr..lr          # lr = pop()
-    movz        r0              # retval = 0
+5:  movz        r0              # retval = 0
     ret                         # return retval

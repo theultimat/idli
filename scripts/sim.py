@@ -76,6 +76,8 @@ class Idli:
             'blez':     self._branch_reg,
             'bgtz':     self._branch_reg,
             'bgez':     self._branch_reg,
+            'push':     self._push,
+            'pop':      self._pop,
             'eq':       self._cmp,
             'ne':       self._cmp,
             'lt':       self._cmp,
@@ -101,8 +103,6 @@ class Idli:
             'st!':      self._ld_st,
             'ld':       self._ld_st,
             'st':       self._ld_st,
-            'push':     self._push,
-            'pop':      self._pop,
             'extbl':    self._ext,
             'extbh':    self._ext,
             'insbl':    self._ins,
@@ -196,6 +196,11 @@ class Idli:
             # If it's C then we may need to take the immediate value instead.
             if name == 'c' and value == isa.GREGS['r7']:
                 ops[name] = instr.ops['imm']
+                continue
+
+            # If it's D then just take the value from the encoding.
+            if name == 'd':
+                ops[name] = value
                 continue
 
             # Read the GREG directly, raising an exception if it hasn't been
@@ -498,23 +503,15 @@ class Idli:
 
         return False
 
-    # Push treats A and B as a range of registers which are pushed in order
-    # onto the stack, updating the stack pointer at the end.
+    # PUSH register range onto the stack and update SP.
     def _push(self, instr, ops):
-        first = instr.ops['a']
-        last = instr.ops['b']
-
-        num = last - first + 1
-        if num < 0:
-            num += 8
-
-        # Push the values onto the stack, wrapping back to r0 if required.
+        mask = instr.ops['d']
         sp = self.gregs[isa.GREGS['sp']]
-        for _ in range(num):
-            sp = (sp - 1) & 0xffff
-            self._write_mem(sp, self.gregs[first])
 
-            first = (first + 1) & 0x7
+        for idx in isa.GREGS_INV:
+            if mask & (1 << idx):
+                sp = (sp - 1) & 0xffff
+                self._write_mem(sp, self.gregs[idx])
 
         self._write_greg(isa.GREGS['sp'], sp)
 
@@ -522,20 +519,13 @@ class Idli:
 
     # Reverse of push - operates similarly but it's from B to A instead.
     def _pop(self, instr, ops):
-        first = instr.ops['b']
-        last = instr.ops['a']
-
-        num = last - first + 1
-        if num < 0:
-            num += 8
-
-        # Pop off and update the stack pointer.
+        mask = instr.ops['d']
         sp = self.gregs[isa.GREGS['sp']]
-        for _ in range(num):
-            self._write_greg(first, self._read_mem(sp))
 
-            sp = (sp + 1) & 0xffff
-            first = (first - 1) & 0x7
+        for idx in reversed(isa.GREGS_INV):
+            if mask & (1 << idx):
+                self._write_greg(idx, self._read_mem(sp))
+                sp = (sp + 1) & 0xffff
 
         self._write_greg(isa.GREGS['sp'], sp)
 
