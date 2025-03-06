@@ -28,14 +28,14 @@ module idli_decode_m import idli_pkg::*; (
     STATE_IMM_0                     = 6'b001111,
 
     // Second decode cycle.
-    STATE_NOP_BZ                    = 6'b010000,
+    STATE_NOP_BZ_STACK              = 6'b010000,
     STATE_EQ_LT                     = 6'b010001,
     STATE_GE_PUTP_CMPZ              = 6'b010010,
     STATE_SRX                       = 6'b010011,
     STATE_ROR_SLL                   = 6'b010100,
     STATE_MEM_WB                    = 6'b010101,
     STATE_MEM                       = 6'b010110,
-    STATE_STACK_PERM_INV_INC_URX_0  = 6'b010111,
+    STATE_PERM_INV_INC_URX_0        = 6'b010111,
     STATE_ADD_SUB                   = 6'b011000,
     STATE_AND_ANDN                  = 6'b011001,
     STATE_OR_XOR                    = 6'b011010,
@@ -48,7 +48,7 @@ module idli_decode_m import idli_pkg::*; (
     STATE_QBC                       = 6'b100010,
     STATE_CMPZ_PUTP_0               = 6'b100011,
     STATE_ABC                       = 6'b100100,
-    STATE_STACK_PERM_INV_0          = 6'b100101,
+    STATE_PERM_INV_0                = 6'b100101,
     STATE_INC_URX_0                 = 6'b100110,
     STATE_BP_JP_UTX                 = 6'b100111,
     STATE_MOV_PC                    = 6'b101000,
@@ -59,7 +59,7 @@ module idli_decode_m import idli_pkg::*; (
     STATE_BC                        = 6'b110001,
     STATE_C                         = 6'b110010,
     STATE_CMPZ_PUTP_1               = 6'b110011,
-    STATE_STACK_PERM_INV_1          = 6'b110100,
+    STATE_PERM_INV_1                = 6'b110100,
     STATE_INC_URX_1                 = 6'b110101,
     STATE_IMM_3                     = 6'b111111
   } state_t;
@@ -96,14 +96,14 @@ module idli_decode_m import idli_pkg::*; (
         // decoding the first bits.
         if (i_dcd_enc_vld) begin
           casez (i_dcd_enc)
-            4'b0000: state_d = STATE_NOP_BZ;
+            4'b0000: state_d = STATE_NOP_BZ_STACK;
             4'b0100: state_d = STATE_EQ_LT;
             4'b0101: state_d = STATE_GE_PUTP_CMPZ;
             4'b0110: state_d = STATE_SRX;
             4'b0111: state_d = STATE_ROR_SLL;
             4'b100?: state_d = STATE_MEM_WB;
             4'b1010: state_d = STATE_MEM;
-            4'b1011: state_d = STATE_STACK_PERM_INV_INC_URX_0;
+            4'b1011: state_d = STATE_PERM_INV_INC_URX_0;
             4'b1100: state_d = STATE_ADD_SUB;
             4'b1101: state_d = STATE_AND_ANDN;
             4'b1110: state_d = STATE_OR_XOR;
@@ -112,10 +112,13 @@ module idli_decode_m import idli_pkg::*; (
           endcase
         end
       end
-      STATE_NOP_BZ: begin
-        // If the bottom bit of the entry is a 1 then we have a conditional
-        // branch checking register against zero, otherwise it must be a NOP.
-        state_d = i_dcd_enc[0] ? STATE_BZ : STATE_NOP_0;
+      STATE_NOP_BZ_STACK: begin
+        // Check for conditional branch or stack operations.
+        casez (i_dcd_enc)
+          4'b01??: state_d = STATE_QBC;
+          4'b001?: state_d = STATE_BZ;
+          default: state_d = STATE_NOP_0;
+        endcase
       end
       STATE_EQ_LT: begin
         // We've fully decoded whether it's EQ/NE/LT/LTU now so all that's
@@ -131,9 +134,9 @@ module idli_decode_m import idli_pkg::*; (
           default: state_d = STATE_QBC;
         endcase
       end
-      STATE_STACK_PERM_INV_INC_URX_0: begin
+      STATE_PERM_INV_INC_URX_0: begin
         // Top bit being set indicates this is INC/DEC/URX[B].
-        state_d = i_dcd_enc[3] ? STATE_INC_URX_0 : STATE_STACK_PERM_INV_0;
+        state_d = i_dcd_enc[3] ? STATE_INC_URX_0 : STATE_PERM_INV_0;
       end
       STATE_SRX,
       STATE_ROR_SLL,
@@ -169,9 +172,9 @@ module idli_decode_m import idli_pkg::*; (
         // No more opcode bits in this cycle so keep going.
         state_d = STATE_CMPZ_PUTP_1;
       end
-      STATE_STACK_PERM_INV_0: begin
+      STATE_PERM_INV_0: begin
         // No more opcode bits, continue.
-        state_d = STATE_STACK_PERM_INV_1;
+        state_d = STATE_PERM_INV_1;
       end
       STATE_INC_URX_0: begin
         // No more opcode bits, continue.
@@ -222,7 +225,7 @@ module idli_decode_m import idli_pkg::*; (
         // Special case here for P - all instructions except NOP and branch
         // and compare on register are predicated, with these two special
         // cases always forced to be PT.
-        if (state_q == STATE_NOP_BZ) begin
+        if (state_q == STATE_NOP_BZ_STACK) begin
           op_d.p = PREG_PT;
         end else begin
           op_d.p = preg_t'(i_dcd_enc[2:1]);
@@ -251,7 +254,7 @@ module idli_decode_m import idli_pkg::*; (
 
     if (cycle_q == 2'd2) begin
       op_d.a_vld = state_q == STATE_ABC
-                || state_q == STATE_STACK_PERM_INV_0
+                || state_q == STATE_PERM_INV_0
                 || state_q == STATE_INC_URX_0
                 || state_q == STATE_MOV_PC;
       end
@@ -263,10 +266,10 @@ module idli_decode_m import idli_pkg::*; (
 
     if (cycle_q == 2'd3) begin
       case (state_q)
-        STATE_BC:               op_d.b_vld = '1;
-        STATE_STACK_PERM_INV_1: op_d.b_vld = '1;
-        STATE_INC_URX_1:        op_d.b_vld = ~i_dcd_enc[1];
-        default:                op_d.b_vld = '0;
+        STATE_BC:         op_d.b_vld = '1;
+        STATE_PERM_INV_1: op_d.b_vld = '1;
+        STATE_INC_URX_1:  op_d.b_vld = ~i_dcd_enc[1];
+        default:          op_d.b_vld = '0;
       endcase
     end
   end
