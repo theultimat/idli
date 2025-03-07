@@ -113,7 +113,8 @@ module idli_decode_m import idli_pkg::*; (
         end
       end
       STATE_NOP_BZ_STACK: begin
-        // Check for conditional branch or stack operations.
+        // Check for conditional branch or stack operations. We go into QBC
+        // for stack ops as the register range shares these bits.
         casez (i_dcd_enc)
           4'b01??: state_d = STATE_QBC;
           4'b001?: state_d = STATE_BZ;
@@ -414,6 +415,30 @@ module idli_decode_m import idli_pkg::*; (
         op_d.uart_rx_lo = '0;
         op_d.uart_rx_hi = '0;
       end
+    endcase
+  end
+
+  // Comparison operator.
+  always_comb begin
+    case (state_q)
+      STATE_EQ_LT: begin
+        case ({i_dcd_enc[3], i_dcd_enc[0]})
+          2'b00:   op_d.cmp_op = CMP_OP_EQ;
+          2'b01:   op_d.cmp_op = CMP_OP_NE;
+          default: op_d.cmp_op = CMP_OP_LT;
+        endcase
+      end
+      STATE_CMPZ_PUTP_1: begin
+        if (|i_dcd_enc[2:1]) begin
+          op_d.cmp_op = i_dcd_enc[0] ? CMP_OP_GE : CMP_OP_LT;
+        end else begin
+          op_d.cmp_op = i_dcd_enc[0] ? CMP_OP_NE : CMP_OP_EQ;
+        end
+      end
+      STATE_QBC,
+      STATE_BC:           op_d.cmp_op = op_q.cmp_op;
+      STATE_GE_PUTP_CMPZ: op_d.cmp_op = CMP_OP_GE;
+      default:  op_d.cmp_op = cmp_op_t'('x);
     endcase
   end
 

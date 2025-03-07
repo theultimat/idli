@@ -33,6 +33,14 @@ typedef enum logic [1:0] {
   ALU_OP_XOR
 } alu_op_t;
 
+// Comparisons.
+typedef enum logic [1:0] {
+  CMP_OP_EQ,
+  CMP_OP_NE,
+  CMP_OP_LT,
+  CMP_OP_GE
+} cmp_op_t;
+
 // Possible source locations for LHS operand.
 typedef enum logic [1:0] {
   LHS_SRC_REG,
@@ -80,6 +88,9 @@ typedef struct packed {
   logic uart_tx_hi;
   logic uart_rx_lo;
   logic uart_rx_hi;
+
+  // Comparison operator.
+  cmp_op_t cmp_op;
 } op_t;
 
 endpackage
