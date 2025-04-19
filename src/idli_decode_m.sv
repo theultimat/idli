@@ -237,7 +237,15 @@ module idli_decode_m import idli_pkg::*; (
         op_d.b[2:1] = i_dcd_enc[1:0];
     end else if (cycle_q == 2'd3) begin
         op_d.b[0] = i_dcd_enc[3];
-        op_d.c    = greg_t'(i_dcd_enc[2:0]);
+
+        // Special case for C - if we're a PUTPT or PUTPF then we replicate
+        // operand B into C. This means we can compare for EQ or NE against
+        // the same register to implement the predicate put constant.
+        if (state_q == STATE_CMPZ_PUTP_1) begin
+          op_d.c = greg_t'({op_d.b[2:1], i_dcd_enc[3]});
+        end else begin
+          op_d.c = greg_t'(i_dcd_enc[2:0]);
+        end
     end
   end
 
@@ -437,16 +445,30 @@ module idli_decode_m import idli_pkg::*; (
         endcase
       end
       STATE_CMPZ_PUTP_1: begin
-        if (|i_dcd_enc[2:1]) begin
-          op_d.cmp_op = i_dcd_enc[0] ? CMP_OP_GE : CMP_OP_LT;
-        end else begin
-          op_d.cmp_op = i_dcd_enc[0] ? CMP_OP_NE : CMP_OP_EQ;
-        end
+        casez (i_dcd_enc)
+          4'b?001: op_d.cmp_op = CMP_OP_NE;
+          4'b?01?: op_d.cmp_op = CMP_OP_LT;
+          4'b?10?: op_d.cmp_op = CMP_OP_GE;
+          4'b011?: op_d.cmp_op = CMP_OP_NE;
+          default: op_d.cmp_op = CMP_OP_EQ;
+        endcase
       end
       STATE_QBC,
       STATE_BC:           op_d.cmp_op = op_q.cmp_op;
       STATE_GE_PUTP_CMPZ: op_d.cmp_op = CMP_OP_GE;
       default:  op_d.cmp_op = cmp_op_t'('x);
+    endcase
+  end
+
+  // Whether comparison is signed.
+  always_comb begin
+    case (state_q)
+      STATE_EQ_LT:        op_d.cmp_signed = ~&{i_dcd_enc[3], i_dcd_enc[0]};
+      STATE_GE_PUTP_CMPZ: op_d.cmp_signed = i_dcd_enc[3] | ~i_dcd_enc[0];
+      STATE_CMPZ_PUTP_1:  op_d.cmp_signed = '1;
+      STATE_QBC,
+      STATE_BC:           op_d.cmp_signed = op_q.cmp_signed;
+      default:            op_d.cmp_signed = '0;
     endcase
   end
 

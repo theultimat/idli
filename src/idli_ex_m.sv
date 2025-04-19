@@ -200,10 +200,18 @@ module idli_ex_m import idli_pkg::*; (
   always_comb wr_reg_en   = op_vld_q && (op_q.a_vld || op_q.wr_lr);
   always_comb wr_reg_data = op_q.wr_lr ? i_ex_pc_next : alu_out;
 
-  // For now always write zero into the predicate register if Q is valid.
+  // Write into the predicate register if Q is valid.
   always_comb wr_pred       = op_q.q;
   always_comb wr_pred_en    = op_vld_q && op_q.q_vld;
-  always_comb wr_pred_data  = '0; // TODO
+
+  always_comb begin
+    case (op_q.cmp_op)
+      CMP_OP_EQ: wr_pred_data =  flag_z;
+      CMP_OP_NE: wr_pred_data = ~flag_z;
+      CMP_OP_LT: wr_pred_data = op_q.cmp_signed ? (flag_n != flag_v) : ~flag_c;
+      default:   wr_pred_data = op_q.cmp_signed ? (flag_n == flag_v) :  flag_c;
+    endcase
+  end
 
   // Redirect if we're writing the PC.
   always_comb o_ex_redirect = op_vld_q && op_q.wr_pc;
