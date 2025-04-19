@@ -236,7 +236,7 @@ module idli_ex_m import idli_pkg::*; (
   always_ff @(posedge i_ex_gck, negedge i_ex_rst_n) begin
     if (!i_ex_rst_n) begin
       flag_z_q <= '1;
-    end else begin
+    end else if (op_vld_q) begin
       flag_z_q <= &ctr_q ? '1 : flag_z;
     end
   end
