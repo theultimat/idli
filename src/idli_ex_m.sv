@@ -71,6 +71,7 @@ module idli_ex_m import idli_pkg::*; (
   logic   wr_pred_en;
   logic   wr_pred_data;
   logic   rd_pred_data;
+  logic   rd_pred_data_raw;
 
   // Flags based on ALU output. We have the same flags as ARM: Zero, Negative,
   // Carry, and oVerflow. These can all be detected on the final cycle except
@@ -110,7 +111,7 @@ module idli_ex_m import idli_pkg::*; (
     .i_pred_gck     (i_ex_gck),
 
     .i_pred_rd      (i_ex_op.p),
-    .o_pred_rd_data (rd_pred_data),
+    .o_pred_rd_data (rd_pred_data_raw),
 
     .i_pred_wr      (wr_pred),
     .i_pred_wr_en   (wr_pred_en),
@@ -157,6 +158,12 @@ module idli_ex_m import idli_pkg::*; (
       op_vld_q <= op_vld_d;
     end
   end
+
+  // Optionally invert the signal coming out of P using the *incoming*
+  // instruction, *not* the current one. This controls whether to take
+  // a branch on predicate false.
+  always_comb rd_pred_data = i_ex_op.p_inv ? ~rd_pred_data_raw
+                                           :  rd_pred_data_raw;
 
   // When we're accepting an instruction it's only going to be valid if the
   // predicate is true - this is why we feed the incoming instruction's P into

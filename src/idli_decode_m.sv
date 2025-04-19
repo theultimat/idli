@@ -472,4 +472,14 @@ module idli_decode_m import idli_pkg::*; (
     endcase
   end
 
+  // Whether P should be inverted. We only need to do this for branch on
+  // precicate false.
+  always_comb begin
+    case (state_q)
+      STATE_BP_JP_UTX: op_d.p_inv = ~i_dcd_enc[3] & i_dcd_enc[0];
+      STATE_C:         op_d.p_inv = op_q.p_inv;
+      default:         op_d.p_inv = '0;
+    endcase
+  end
+
 endmodule

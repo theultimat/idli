@@ -92,6 +92,9 @@ typedef struct packed {
   // Comparison operator.
   cmp_op_t cmp_op;
   logic    cmp_signed;
+
+  // Whether P should be negated when read out of the register file.
+  logic   p_inv;
 } op_t;
 
 endpackage
