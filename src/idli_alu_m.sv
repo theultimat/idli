@@ -17,7 +17,8 @@ module idli_alu_m import idli_pkg::*; (
 
   // Output data.
   output var sqi_data_t o_alu_data,
-  output var logic      o_alu_cout
+  output var logic      o_alu_cout,
+  output var logic      o_alu_sign_cin
 );
 
   sqi_data_t  alu_add;
@@ -39,8 +40,13 @@ module idli_alu_m import idli_pkg::*; (
     logic carry;
 
     carry = i_alu_cin;
+    o_alu_sign_cin = 'x;
 
     for (int unsigned BIT = 0; BIT < 4; BIT++) begin
+      if (BIT == 3) begin
+        o_alu_sign_cin = carry;
+      end
+
       alu_add[BIT] = alu_xor[BIT] ^ carry;
       carry = (alu_xor[BIT] & carry) | alu_and[BIT];
     end

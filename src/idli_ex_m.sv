@@ -61,6 +61,7 @@ module idli_ex_m import idli_pkg::*; (
   logic carry_q;
   logic carry_d;
   logic alu_cin;
+  logic alu_sign_cin;
 
   // ALU output.
   sqi_data_t alu_out;
@@ -70,6 +71,15 @@ module idli_ex_m import idli_pkg::*; (
   logic   wr_pred_en;
   logic   wr_pred_data;
   logic   rd_pred_data;
+
+  // Flags based on ALU output. We have the same flags as ARM: Zero, Negative,
+  // Carry, and oVerflow. These can all be detected on the final cycle except
+  // for Z which needs to record whether each generated output slice is zero.
+  logic flag_z_q;
+  logic flag_z;
+  logic flag_n;
+  logic flag_c;
+  logic flag_v;
 
 `ifdef idli_debug_signals_d
 
@@ -119,7 +129,8 @@ module idli_ex_m import idli_pkg::*; (
     .i_alu_cin      (alu_cin),
 
     .o_alu_data     (alu_out),
-    .o_alu_cout     (carry_d)
+    .o_alu_cout     (carry_d),
+    .o_alu_sign_cin (alu_sign_cin)
   );
 
 
@@ -212,6 +223,29 @@ module idli_ex_m import idli_pkg::*; (
   always_comb o_ex_uart_rx_acp = op_vld_q && (op_q.uart_rx_lo && !ctr_q[1]
                                           ||  op_q.uart_rx_hi &&  ctr_q[1]);
 
+  // Reset the persistent Z flag on reset or when the next cycle will be the
+  // first of an instruction, otherwise flop the new value.
+  always_ff @(posedge i_ex_gck, negedge i_ex_rst_n) begin
+    if (!i_ex_rst_n) begin
+      flag_z_q <= '1;
+    end else begin
+      flag_z_q <= &ctr_q ? '1 : flag_z;
+    end
+  end
+
+  // New value to flop for Z is determined by the current output of the ALU
+  // all begin zero, as well as all the previous cycles also being zero.
+  always_comb flag_z = flag_z_q && ~|alu_out;
+
+  // N is set if the highest bit of the output is set.
+  always_comb flag_n = alu_out[3];
+
+  // C is set directly from the carry out of the ALU.
+  always_comb flag_c = carry_d;
+
+  // V is set based on the bit carry out and carry in of the sign bit of the
+  // ALU output being different.
+  always_comb flag_v = alu_sign_cin ^ carry_d;
 
 `ifdef idli_debug_signals_d
 
