@@ -228,7 +228,7 @@ class TestBench:
     # Check a PREG write is the correct value.
     def check_preg_write(self, reg, value):
         sim = int(value)
-        rtl = (self.dut.ex_pregs.value.integer >> reg) & 1
+        rtl = self.dut.ex_pregs[reg].value.integer
 
         self.log(f'PREG: p{reg} sim=0x{sim} rtl=0x{rtl}')
         assert sim == rtl

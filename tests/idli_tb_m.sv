@@ -27,7 +27,7 @@ module idli_tb_m import idli_pkg::*; ();
   // Internal debug signals.
   logic        ex_instr_done;
   logic [15:0] ex_gregs [8];
-  logic        ex_pregs [4];
+  logic  [0:0] ex_pregs [4];
   logic [15:0] ex_pc_q;
   logic [15:0] ex_pc_d;
   logic [15:0] ex_pc;
