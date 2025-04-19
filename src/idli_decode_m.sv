@@ -320,13 +320,13 @@ module idli_decode_m import idli_pkg::*; (
   // Determine where to take LHS from.
   always_comb begin
     case (state_q)
-      STATE_ABC:        op_d.lhs_src = LHS_SRC_REG;
-      STATE_MOV_PC:     op_d.lhs_src = i_dcd_enc[0] ? LHS_SRC_PC
-                                                    : LHS_SRC_ZERO;
-      STATE_BP_JP_UTX:  op_d.lhs_src = |i_dcd_enc[3:2] ? LHS_SRC_ZERO
-                                                       : LHS_SRC_PC;
-      STATE_INC_URX_1:  op_d.lhs_src = i_dcd_enc[1] ? LHS_SRC_ZERO
-                                                    : LHS_SRC_REG;
+      STATE_ABC, STATE_BC: op_d.lhs_src = LHS_SRC_REG;
+      STATE_MOV_PC:        op_d.lhs_src = i_dcd_enc[0] ? LHS_SRC_PC
+                                                       : LHS_SRC_ZERO;
+      STATE_BP_JP_UTX:     op_d.lhs_src = |i_dcd_enc[3:2] ? LHS_SRC_ZERO
+                                                          : LHS_SRC_PC;
+      STATE_INC_URX_1:     op_d.lhs_src = i_dcd_enc[1] ? LHS_SRC_ZERO
+                                                       : LHS_SRC_REG;
       default:          op_d.lhs_src = op_q.lhs_src;
     endcase
   end
