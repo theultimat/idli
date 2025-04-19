@@ -340,17 +340,22 @@ module idli_decode_m import idli_pkg::*; (
       STATE_OR_XOR:           op_d.alu_op = i_dcd_enc[3] ? ALU_OP_XOR : ALU_OP_OR;
       STATE_MOV_PC_BP_JP_UTX: op_d.alu_op = ALU_OP_ADD;
       STATE_INC_URX_0:        op_d.alu_op = ALU_OP_ADD;
+      STATE_EQ_LT:            op_d.alu_op = ALU_OP_ADD;
+      STATE_GE_PUTP_CMPZ:     op_d.alu_op = ALU_OP_ADD;
       default:                op_d.alu_op = op_q.alu_op;
     endcase
   end
 
   // Carry in is set for SUB and INC. Make sure preserve in states following
-  // the set, and clear on all others.
+  // the set, and clear on all others. Comparisons are treated as SUB.
   always_comb begin
     case (state_q)
       STATE_ADD_SUB:        op_d.alu_cin = i_dcd_enc[3];
       STATE_INC_URX_1:      op_d.alu_cin = ~i_dcd_enc[1];
       STATE_ABC, STATE_BC:  op_d.alu_cin = op_q.alu_cin;
+      STATE_EQ_LT:          op_d.alu_cin = '1;
+      STATE_GE_PUTP_CMPZ:   op_d.alu_cin = '1;
+      STATE_QBC:            op_d.alu_cin = op_q.alu_cin;
       default:              op_d.alu_cin = '0;
     endcase
   end
@@ -361,7 +366,10 @@ module idli_decode_m import idli_pkg::*; (
     case (state_q)
       STATE_AND_ANDN:       op_d.alu_rhs_inv = i_dcd_enc[3];
       STATE_ADD_SUB:        op_d.alu_rhs_inv = i_dcd_enc[3];
+      STATE_EQ_LT:          op_d.alu_rhs_inv = '1;
+      STATE_GE_PUTP_CMPZ:   op_d.alu_rhs_inv = '1;
       STATE_ABC, STATE_BC:  op_d.alu_rhs_inv = op_q.alu_rhs_inv;
+      STATE_QBC:            op_d.alu_rhs_inv = op_q.alu_rhs_inv;
       default:              op_d.alu_rhs_inv = '0;
     endcase
   end
