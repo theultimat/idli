@@ -1,0 +1,24 @@
+    .include "wrapper.ia"
+
+fib:                        # r0 = n
+    ltu     p0, r0, 2       # p = n < 2
+    ret.p0                  # if (p) return n
+    mov     r2, r0          # n = n
+    mov     r0, 1           # cur = 1
+    mov     r1, r0          # prev = 1
+1:  geu     p0, r2, 3       # p = n >= 3
+    retf.p0                 # if (!p) return cur
+    mov     r3, r0          # tmp = cur
+    add     r0, r0, r1      # cur += prev
+    mov     r1, r3          # prev = tmp
+    dec     r2              # n--
+    b       @1b             # goto 1b
+
+main:
+    urx     r0              # n = uart.recv()
+    mov     r5, lr          # tmp = lr
+    bl      @fib            # fib(n)
+    utx     r0              # uart.send(n)
+    mov     lr, r5          # lr = tmp
+    movz    r0              # retval = 0
+    ret                     # return retval
