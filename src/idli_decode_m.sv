@@ -197,7 +197,7 @@ module idli_decode_m import idli_pkg::*; (
         // All states return back to the start for the next instruction,
         // unless the instruction takes an immediate. Special case is on
         // redirect in which case we should always reset.
-        if (i_dcd_ex_redirect) begin
+        if (i_dcd_ex_redirect || state_q == STATE_IMM_3) begin
           state_d = STATE_INIT;
         end else begin
           state_d = (op_d.rhs_src == RHS_SRC_IMM) ? STATE_IMM_0 : STATE_INIT;
