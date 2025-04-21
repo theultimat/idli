@@ -234,9 +234,15 @@ module idli_decode_m import idli_pkg::*; (
     end else if (cycle_q == 2'd2) begin
         op_d.q      = preg_t'(i_dcd_enc[3:2]);
         op_d.a[1:0] = i_dcd_enc[3:2];
-        op_d.b[2:1] = i_dcd_enc[1:0];
+
+        // If this is an instruction with the A operand only then replicate it
+        // into B.
+        op_d.b[2:1] = (state_q == STATE_INC_URX_0) ? {op_q.a[2], i_dcd_enc[3]}
+                                                   : i_dcd_enc[1:0];
     end else if (cycle_q == 2'd3) begin
-        op_d.b[0] = i_dcd_enc[3];
+       // As above replicate A into B for A only instructions.
+        op_d.b[0] = (state_q == STATE_INC_URX_1) ? op_q.a[0]
+                                                 : i_dcd_enc[3];
 
         // Special case for C - if we're a PUTPT or PUTPF then we replicate
         // operand B into C. This means we can compare for EQ or NE against
@@ -331,10 +337,11 @@ module idli_decode_m import idli_pkg::*; (
     endcase
   end
 
-  // C can be read from the register, immediate, or UART.
+  // C can be read from the register, immediate, UART, or zero.
   always_comb begin
     case (state_q)
-      STATE_INC_URX_1: op_d.rhs_src = RHS_SRC_UART;
+      STATE_INC_URX_1: op_d.rhs_src =  i_dcd_enc[1]   ? RHS_SRC_UART
+                                                      : RHS_SRC_ZERO;
       default:         op_d.rhs_src = &i_dcd_enc[2:0] ? RHS_SRC_IMM
                                                       : RHS_SRC_REG;
     endcase
@@ -359,7 +366,7 @@ module idli_decode_m import idli_pkg::*; (
   always_comb begin
     case (state_q)
       STATE_ADD_SUB:        op_d.alu_cin = i_dcd_enc[3];
-      STATE_INC_URX_1:      op_d.alu_cin = ~i_dcd_enc[1];
+      STATE_INC_URX_1:      op_d.alu_cin = ~|i_dcd_enc[1:0];
       STATE_ABC, STATE_BC:  op_d.alu_cin = op_q.alu_cin;
       STATE_EQ_LT:          op_d.alu_cin = '1;
       STATE_GE_PUTP_CMPZ:   op_d.alu_cin = '1;
@@ -376,6 +383,7 @@ module idli_decode_m import idli_pkg::*; (
       STATE_ADD_SUB:        op_d.alu_rhs_inv = i_dcd_enc[3];
       STATE_EQ_LT:          op_d.alu_rhs_inv = '1;
       STATE_GE_PUTP_CMPZ:   op_d.alu_rhs_inv = '1;
+      STATE_INC_URX_1:      op_d.alu_rhs_inv = ~i_dcd_enc[1] & i_dcd_enc[0];
       STATE_ABC, STATE_BC:  op_d.alu_rhs_inv = op_q.alu_rhs_inv;
       STATE_QBC:            op_d.alu_rhs_inv = op_q.alu_rhs_inv;
       default:              op_d.alu_rhs_inv = '0;

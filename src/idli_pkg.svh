@@ -52,7 +52,8 @@ typedef enum logic [1:0] {
 typedef enum logic [1:0] {
   RHS_SRC_REG,
   RHS_SRC_IMM,
-  RHS_SRC_UART
+  RHS_SRC_UART,
+  RHS_SRC_ZERO
 } rhs_src_t;
 
 // Decoded operation. Contains control signals for execution.

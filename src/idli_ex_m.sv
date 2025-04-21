@@ -186,6 +186,7 @@ module idli_ex_m import idli_pkg::*; (
       RHS_SRC_REG:  rhs_data = rhs_reg_data;
       RHS_SRC_IMM:  rhs_data = i_ex_imm;
       RHS_SRC_UART: rhs_data = i_ex_uart_rx;
+      RHS_SRC_ZERO: rhs_data = '0;
       default:      rhs_data = sqi_data_t'('x);
     endcase
   end
