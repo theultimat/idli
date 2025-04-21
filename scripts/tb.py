@@ -40,7 +40,7 @@ class TestBenchCallback(sim.IdliCallback):
             self.tb.sim_uart_rx.append(hi)
 
     def write_mem(self, addr, value):
-        raise NotImplementedError()
+        self.tb.sim_st_data.append((addr, value))
 
     def read_mem(self, addr, value):
         raise NotImplementedError()
@@ -67,6 +67,9 @@ class TestBench:
         self.sim_uart_rx = []
         self.rtl_uart_rx = []
         self.ref_uart_rx = [x for x, in struct.iter_unpack('<B', uart_out)]
+
+        self.sim_st_data = []
+        self.rtl_st_data = []
 
         # Add 'END' to the expected UART RX output - this will be followed by
         # the exit code.
@@ -135,7 +138,7 @@ class TestBench:
             if sio is not None:
                 dut_sio_in.value = sio
 
-            # TODO Check stores
+            self._check_st_data()
 
     # Check PC matches.
     def _check_pc(self):
@@ -174,6 +177,11 @@ class TestBench:
             # Run the behavioural model to fire the callbacks that perform the
             # checks.
             self.sim.tick()
+
+    # Check stores to memory.
+    def _check_st_data(self):
+        while self.sim_st_data and self.rtl_st_data:
+            raise NotImplementedError() # TODO!
 
     # Check simulator and RTL UART match.
     def _check_uart_data(self):
@@ -268,6 +276,12 @@ class TestBench:
             raise Exception(f'Outstanding sim UART: {self.sim_uart_rx}')
         if self.rtl_uart_rx:
             raise Exception(f'Outstanding RTL UART: {self.rtl_uart_rx}')
+
+        self._check_st_data()
+        if self.sim_st_data:
+            raise Exception(f'Outstanding sim ST data: {self.sim_st_data}')
+        if self.rtl_st_data:
+            raise Exception(f'Outstanding RTL ST data: {self.rtl_st_data}')
 
         # Check the exit code is correct.
         if self.exit_code != 0:
