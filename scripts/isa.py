@@ -68,8 +68,8 @@ ENCODINGS = {
     'bgez':     '0000001101bbbccc',
 
     # Push/pop registers to/from the stack.
-    'push':     '00000100dddddddd',
-    'pop':      '00000101dddddddd',
+    'push':     '000001000ddddddd',
+    'pop':      '000001010ddddddd',
 
     # Compare two sources and store the result in a predicate register.
     'eq':       '01000pp0qqbbbccc',
@@ -376,6 +376,11 @@ class Instruction:
                     if reg not in GREGS:
                         raise Exception(
                             f'{error_prefix}Bad GREG in register range: {reg}'
+                        )
+
+                    if reg == GREGS['sp']:
+                        raise Exception(
+                            f'{error_prefix}SP not allowed in register range.'
                         )
 
                     bit = 1 << GREGS[reg]
