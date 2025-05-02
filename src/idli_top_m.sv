@@ -69,7 +69,12 @@ module idli_top_m import idli_pkg::*; (
     .o_dcd_op           (dcd_op),
     .o_dcd_op_vld       (dcd_op_vld),
 
-    .i_dcd_ex_redirect  (ex_redirect)
+    .i_dcd_ex_redirect  (ex_redirect),
+
+    // verilator lint_off PINCONNECTEMPTY
+    .o_dcd_vop_type     (),
+    .o_dcd_vop_type_vld ()
+    // verilator lint_on PINCONNECTEMPTY
   );
 
   idli_ex_m ex_u (

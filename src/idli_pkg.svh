@@ -19,6 +19,9 @@ typedef logic [3:0] sqi_data_t;
 typedef logic [2:0] greg_t;
 typedef logic [1:0] preg_t;
 
+// Register mask, excluding SP.
+typedef logic [6:0] greg_mask_t;
+
 // Identifier for the always true predicate register.
 localparam preg_t PREG_PT = preg_t'(2'd3);
 
@@ -97,6 +100,14 @@ typedef struct packed {
   // Whether P should be negated when read out of the register file.
   logic   p_inv;
 } op_t;
+
+// Virtual OPeration type.
+typedef enum logic [1:0] {
+  VOP_TYPE_NONE,
+  VOP_TYPE_BZ,
+  VOP_TYPE_LD,
+  VOP_TYPE_ST
+} vop_type_t;
 
 endpackage
 

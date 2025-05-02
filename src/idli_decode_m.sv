@@ -16,7 +16,11 @@ module idli_decode_m import idli_pkg::*; (
   output var logic  o_dcd_op_vld,
 
   // Whether a redirect has taken place.
-  input  var logic  i_dcd_ex_redirect
+  input  var logic  i_dcd_ex_redirect,
+
+  // VOP control signals.
+  output var vop_type_t o_dcd_vop_type,
+  output var logic      o_dcd_vop_type_vld
 );
 
   // As the instruction is decoded 4b per cycle we have a state machine to
@@ -487,6 +491,28 @@ module idli_decode_m import idli_pkg::*; (
       STATE_BP_JP_UTX: op_d.p_inv = ~i_dcd_enc[3] & i_dcd_enc[0];
       STATE_C:         op_d.p_inv = op_q.p_inv;
       default:         op_d.p_inv = '0;
+    endcase
+  end
+
+  // VOP type is determined on the second decode cycle.
+  always_comb o_dcd_vop_type_vld = cycle_q == 2'd1;
+  always_comb begin
+    case (state_q)
+      STATE_NOP_BZ_STACK: begin
+        casez (i_dcd_enc)
+          4'b?01?: o_dcd_vop_type = VOP_TYPE_BZ;
+          4'b?1?0: o_dcd_vop_type = VOP_TYPE_LD;
+          4'b?1?1: o_dcd_vop_type = VOP_TYPE_ST;
+          default: o_dcd_vop_type = VOP_TYPE_NONE;
+        endcase
+      end
+      STATE_MEM_WB,
+      STATE_MEM: begin
+        o_dcd_vop_type = i_dcd_enc[3] ? VOP_TYPE_ST : VOP_TYPE_LD;
+      end
+      default: begin
+        o_dcd_vop_type = VOP_TYPE_NONE;
+      end
     endcase
   end
 
