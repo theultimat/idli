@@ -21,8 +21,12 @@ module idli_top_m import idli_pkg::*; (
   sqi_data_t sqi_rd_data;
   logic      sqi_rd_data_vld;
 
-  op_t  dcd_op;
-  logic dcd_op_vld;
+  op_t        dcd_op;
+  logic       dcd_op_vld;
+  vop_type_t  vop_type;
+  logic       vop_type_vld;
+  logic [1:0] vop_ctr;
+  logic       vop_stack;
 
   sqi_data_t pc;
   sqi_data_t pc_next;
@@ -71,9 +75,27 @@ module idli_top_m import idli_pkg::*; (
 
     .i_dcd_ex_redirect  (ex_redirect),
 
+    .o_dcd_vop_type     (vop_type),
+    .o_dcd_vop_type_vld (vop_type_vld),
+    .o_dcd_vop_ctr      (vop_ctr),
+    .o_dcd_vop_stack    (vop_stack)
+  );
+
+  idli_vop_m vop_u (
+    .i_vop_gck      (sync_gck),
+    .i_vop_rst_n    (i_top_rst_n),
+
+    .i_vop_enc      (sqi_rd_data),
+    .i_vop_enc_vld  (sqi_rd_data_vld),
+
+    .i_vop_type     (vop_type),
+    .i_vop_type_vld (vop_type_vld),
+    .i_vop_ctr      (vop_ctr),
+    .i_vop_stack    (vop_stack),
+
     // verilator lint_off PINCONNECTEMPTY
-    .o_dcd_vop_type     (),
-    .o_dcd_vop_type_vld ()
+    .o_vop_op(),
+    .o_vop_op_vld()
     // verilator lint_on PINCONNECTEMPTY
   );
 

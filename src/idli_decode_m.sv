@@ -19,8 +19,10 @@ module idli_decode_m import idli_pkg::*; (
   input  var logic  i_dcd_ex_redirect,
 
   // VOP control signals.
-  output var vop_type_t o_dcd_vop_type,
-  output var logic      o_dcd_vop_type_vld
+  output var vop_type_t   o_dcd_vop_type,
+  output var logic        o_dcd_vop_type_vld,
+  output var logic [1:0]  o_dcd_vop_ctr,
+  output var logic        o_dcd_vop_stack
 );
 
   // As the instruction is decoded 4b per cycle we have a state machine to
@@ -515,5 +517,11 @@ module idli_decode_m import idli_pkg::*; (
       end
     endcase
   end
+
+  // Counter is forward to VOP generator to avoid another flop.
+  always_comb o_dcd_vop_ctr = cycle_q;
+
+  // VOP is a stack operation only for PUSH or POP.
+  always_comb o_dcd_vop_stack = (state_q == STATE_NOP_BZ_STACK) && i_dcd_enc[2];
 
 endmodule

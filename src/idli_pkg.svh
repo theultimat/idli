@@ -48,7 +48,8 @@ typedef enum logic [1:0] {
 typedef enum logic [1:0] {
   LHS_SRC_REG,
   LHS_SRC_ZERO,
-  LHS_SRC_PC
+  LHS_SRC_PC,
+  LHS_SRC_SQI
 } lhs_src_t;
 
 // Possible source locations for RHS operand.
@@ -99,6 +100,9 @@ typedef struct packed {
 
   // Whether P should be negated when read out of the register file.
   logic   p_inv;
+
+  // Whether ALU output should be written directly to SQI.
+  logic   wr_sqi;
 } op_t;
 
 // Virtual OPeration type.
